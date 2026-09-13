@@ -1,0 +1,33 @@
+# Environment variables and API secrets
+.env
+.env.local
+.env.*.local
+backend/.env
+CREDENTIALS.md
+
+# Node.js and Next.js
+node_modules/
+.next/
+out/
+
+
+# Python virtual environment
+venv/
+env/
+.venv/
+
+# Byte-compiled / cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# SQLite history database & uploaded label specimens
+backend/history.db
+backend/uploads/
+
+# IDE / OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

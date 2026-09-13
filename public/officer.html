@@ -1,0 +1,304 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1E1B4B">
+  <title>LabelLens - Senior Reviewing Officer Command Center</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="officer-portal-body">
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            <path d="m9 12 2 2 4-4"></path>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">LabelLens</span>
+          <span class="brand-sub">Adjudication Command Center</span>
+        </div>
+      </div>
+
+      <div class="header-right-user">
+        <div class="user-profile-badge">
+          <span class="user-role-dot" style="background: #FCD34D;"></span>
+          <div class="user-profile-text">
+            <strong id="headerOfficerName">Dr. A. K. Sharma</strong>
+            <small id="headerOfficerBadge">Assistant Controller • Zone 4</small>
+          </div>
+        </div>
+        <button type="button" class="btn-secondary btn-signout" id="btnSignOut">
+          Sign Out
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Views -->
+    <main class="app-main">
+      <!-- Officer Authority Header -->
+      <div class="officer-authority-card card">
+        <div class="officer-authority-content">
+          <div class="officer-badge-icon">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              <path d="m9 12 2 2 4-4"></path>
+            </svg>
+          </div>
+          <div class="officer-info">
+            <div class="officer-title-row">
+              <h2 class="officer-name" id="mainOfficerName">Dr. A. K. Sharma</h2>
+              <span class="officer-designation-badge">Assistant Controller (Legal Metrology)</span>
+              <span class="officer-jurisdiction-badge" id="mainOfficerJurisdiction">Jurisdiction: Zone 4 (Central Dist.)</span>
+            </div>
+            <p class="officer-subtitle">Enforcement & Appellate Authority • Legal Metrology Act, 2009 & Packaged Commodities Rules, 2011</p>
+          </div>
+        </div>
+        <div class="officer-quick-actions">
+          <button type="button" class="btn-secondary" id="btnRefreshOfficerDashboard">
+            Refresh Queue
+          </button>
+        </div>
+      </div>
+
+      <!-- Officer KPI Metrics -->
+      <div class="officer-kpi-grid">
+        <div class="officer-kpi-card">
+          <div class="kpi-label">Pending Batches</div>
+          <div class="kpi-number" id="kpiOfficerPendingBatches">0</div>
+          <div class="kpi-subtext">Awaiting regulatory review</div>
+        </div>
+        <div class="officer-kpi-card">
+          <div class="kpi-label">Specimens to Adjudicate</div>
+          <div class="kpi-number" id="kpiOfficerPendingItems">0</div>
+          <div class="kpi-subtext">Individual packages in queue</div>
+        </div>
+        <div class="officer-kpi-card accent-approved">
+          <div class="kpi-label">Approved to Ledger</div>
+          <div class="kpi-number" id="kpiOfficerApprovedItems">0</div>
+          <div class="kpi-subtext">Confirmed regulatory compliance</div>
+        </div>
+        <div class="officer-kpi-card accent-override">
+          <div class="kpi-label">Verdict Overrides</div>
+          <div class="kpi-number" id="kpiOfficerOverriddenItems">0</div>
+          <div class="kpi-subtext">Symmetric officer decisions</div>
+        </div>
+      </div>
+
+      <!-- Jurisdictional Batch Inbox -->
+      <div class="card officer-inbox-card" id="officerInboxCard">
+        <div class="card-header officer-inbox-header">
+          <div>
+            <h3 class="card-title">Jurisdictional Inspection Batch Queue</h3>
+            <p class="card-description">Field inspection dossiers submitted by Legal Metrology Officers for adjudication.</p>
+          </div>
+          <div class="inbox-filter-group">
+            <label for="officerBatchStatusFilter" class="filter-label">Filter Status:</label>
+            <select id="officerBatchStatusFilter" class="select-input">
+              <option value="all">All Batches</option>
+              <option value="submitted" selected>Pending Review</option>
+              <option value="completed">Completed / Approved</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table class="officer-queue-table" id="officerQueueTable">
+            <thead>
+              <tr>
+                <th>Batch ID</th>
+                <th>Establishment / Location</th>
+                <th>Field Inspector</th>
+                <th>Submission Date</th>
+                <th>Specimens</th>
+                <th>Field Verdict</th>
+                <th>Status</th>
+                <th style="text-align: right;">Action</th>
+              </tr>
+            </thead>
+            <tbody id="officerQueueTableBody">
+              <tr>
+                <td colspan="8" class="table-empty">Loading jurisdictional review queue...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Active Batch Review Detail View -->
+      <div class="card officer-workbench-card hidden" id="officerWorkbenchCard">
+        <div class="workbench-header">
+          <div class="workbench-title-area">
+            <button type="button" class="btn-text" id="btnBackToOfficerInbox">
+              ← Back to Queue
+            </button>
+            <div class="workbench-batch-meta">
+              <h3 class="workbench-batch-id" id="workbenchBatchId">BATCH-2026-XXXX</h3>
+              <span class="workbench-establishment" id="workbenchEstablishment">Store Name • Location</span>
+              <span class="status-pill" id="workbenchBatchStatusPill">In Review</span>
+            </div>
+          </div>
+          <div class="workbench-stats-summary" id="workbenchStatsSummary"></div>
+        </div>
+
+        <!-- Items in this batch table -->
+        <div class="workbench-items-list" id="workbenchItemsList"></div>
+      </div>
+    </main>
+
+    <footer class="app-footer">
+      <span>LabelLens • Official Adjudication Command Center • Legal Metrology Act, 2009</span>
+    </footer>
+  </div>
+
+  <!-- Senior Officer Specimen Review Modal (Split View Workbench) -->
+  <div class="modal-overlay hidden" id="officerReviewModal">
+    <div class="modal-container officer-modal-container">
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <div class="modal-header-info">
+          <span class="modal-pre-title">Legal Metrology Specimen Review • Section 15 / 36</span>
+          <h2 class="modal-title" id="modalCommodityTitle">Packaged Commodity Specimen</h2>
+          <div class="modal-meta-row">
+            <span class="meta-item" id="modalBatchRef">Batch: --</span>
+            <span class="meta-item" id="modalInspectorRef">Inspector: --</span>
+            <span class="meta-item" id="modalScanDateRef">Date: --</span>
+            <span class="status-pill" id="modalFieldVerdictPill">Preliminary: Checking</span>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" id="btnCloseOfficerModal">✕</button>
+      </div>
+
+      <!-- Modal Body (Split Layout) -->
+      <div class="modal-body-split">
+        <!-- Left: Evidence Photos -->
+        <div class="modal-evidence-panel">
+          <div class="evidence-header">
+            <span class="panel-subtitle">Multi-angle specimen evidence</span>
+            <div class="angle-switch-tabs" id="modalAngleTabs">
+              <button type="button" class="angle-tab-btn active" data-angle="front">Front (PDP)</button>
+              <button type="button" class="angle-tab-btn" data-angle="back">Back (Info)</button>
+              <button type="button" class="angle-tab-btn" data-angle="side">Side</button>
+            </div>
+          </div>
+
+          <div class="evidence-image-viewport" id="modalImageViewport">
+            <img id="modalEvidenceImage" alt="Specimen angle evidence" />
+            <div class="image-blur-indicator" id="modalImageBlurBadge">Blur: Sharp</div>
+          </div>
+
+          <div class="evidence-meta-strip">
+            <div class="evidence-conf-box">
+              <span class="conf-lbl">AI OCR Confidence:</span>
+              <span class="conf-val" id="modalAiConfidenceVal">0%</span>
+            </div>
+            <div class="evidence-brand-box">
+              <span class="conf-lbl">Brand / Manufacturer:</span>
+              <span class="conf-val" id="modalBrandManufacturerVal">--</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Legal Audit & Decisions -->
+        <div class="modal-audit-panel">
+          <div class="audit-tabs">
+            <button type="button" class="audit-tab-btn active" id="tabRule6Audit">Rule 6 Statutory checklist (10)</button>
+            <button type="button" class="audit-tab-btn" id="tabSpecialRegsAudit">Rule 9 & Special clauses</button>
+          </div>
+
+          <!-- Tab Content 1: Rule 6 -->
+          <div class="audit-tab-content" id="contentRule6Audit">
+            <div class="rule6-checklist-header">
+              <span>Statutory requirement</span>
+              <span>Detected declaration</span>
+              <span>Status</span>
+            </div>
+            <div class="rule6-items-container" id="modalRule6List"></div>
+          </div>
+
+          <!-- Tab Content 2: Rule 9 & Penalties -->
+          <div class="audit-tab-content hidden" id="contentSpecialRegsAudit">
+            <div class="special-regs-box">
+              <h4 class="box-heading">Rule 9 (Minimum Font Height of Numerals)</h4>
+              <p class="box-desc">Font size must conform to Schedule II based on package area and net quantity.</p>
+              <div class="font-height-status" id="modalFontHeightStatus">
+                Compliant with minimum statutory font height standard.
+              </div>
+            </div>
+
+            <div class="special-regs-box" id="modalPanMasalaBox">
+              <h4 class="box-heading">Pan Masala / Tobacco Warning Mandate</h4>
+              <p class="box-desc">Rule 6(1)(g) & Cigarettes and Other Tobacco Products Act: Warning must occupy not less than 50% of PDP.</p>
+              <div class="special-reg-status" id="modalPanMasalaStatus">Not applicable for this commodity.</div>
+            </div>
+
+            <div class="special-regs-box">
+              <h4 class="box-heading">Section 36 Penalty Advisory (Legal Metrology Act, 2009)</h4>
+              <div class="penalty-calc-card">
+                <div class="penalty-row">
+                  <span>First Offence (General):</span>
+                  <strong>Up to ₹25,000 fine</strong>
+                </div>
+                <div class="penalty-row">
+                  <span>Second Offence:</span>
+                  <strong>Up to ₹50,000 fine</strong>
+                </div>
+                <div class="penalty-row">
+                  <span>Subsequent Offence:</span>
+                  <strong>₹50,000 to ₹1,00,000 or up to 1 yr imprisonment</strong>
+                </div>
+                <div class="penalty-row penalty-highlight">
+                  <span>Net Qty Violation (Sec 36(2)):</span>
+                  <strong>₹10,000 to ₹50,000 fine</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Officer Decision Remarks Input -->
+          <div class="officer-decision-box">
+            <label for="officerRemarksInput" class="decision-label">
+              <span>Reviewing Officer Remarks / Legal Justification</span>
+              <span class="required-note" id="remarksRequiredNote">(Required for Overrides & Recapture)</span>
+            </label>
+            <textarea id="officerRemarksInput" class="remarks-textarea" placeholder="Enter judicial rationale, reason for overriding field verdict, or specific instructions for inspector recapture..."></textarea>
+          </div>
+
+          <!-- The 4 Symmetrical Action Buttons -->
+          <div class="officer-actions-grid">
+            <button type="button" class="btn-action-approve" id="btnOfficerApproveAsIs">
+              <div class="action-btn-title">✓ Approve As-Is</div>
+              <div class="action-btn-sub">Endorse findings & store to ledger</div>
+            </button>
+
+            <button type="button" class="btn-action-override" id="btnOfficerOverride">
+              <div class="action-btn-title">⇄ Override Verdict</div>
+              <div class="action-btn-sub" id="btnOfficerOverrideSub">Flip to Compliant / Non-Compliant</div>
+            </button>
+
+            <button type="button" class="btn-action-recapture" id="btnOfficerRecapture">
+              <div class="action-btn-title">↺ Send for Recapture</div>
+              <div class="action-btn-sub">Return to inspector with alert</div>
+            </button>
+
+            <button type="button" class="btn-action-correct" id="btnOfficerCorrect">
+              <div class="action-btn-title">✎ Correct & Remark</div>
+              <div class="action-btn-sub">Adjust values, endorse & finalize</div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="auth.js"></script>
+  <script src="officer.js"></script>
+</body>
+</html>

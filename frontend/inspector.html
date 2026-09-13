@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#14163A">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>LabelLens - Field Inspector Portal</title>
+
+  <!-- Favicon: Label + Lens Logo Mark -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36' fill='none'%3E%3Cpath d='M7 6C5.9 6 5 6.9 5 8V24C5 25.1 5.9 26 7 26H18L27 17V8C27 6.9 26.1 6 25 6H7Z' fill='%231D2050' stroke='%23C79A3E' stroke-width='2' stroke-linejoin='round'/%3E%3Ccircle cx='10' cy='11' r='2' fill='%23C79A3E'/%3E%3Cline x1='9' y1='16' x2='15' y2='16' stroke='%238E93BE' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='9' y1='20' x2='13' y2='20' stroke='%238E93BE' stroke-width='1.5' stroke-linecap='round'/%3E%3Ccircle cx='21' cy='20' r='6.5' fill='%23FCFBF7' stroke='%232B3380' stroke-width='2.5'/%3E%3Cpath d='M18.5 18C19 16.8 20.5 16.2 21.8 16.8' stroke='%238E93BE' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='25.5' y1='24.5' x2='31' y2='30' stroke='%232B3380' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="inspector-portal-body">
+
+  <div class="app-container inspector-app-shell">
+
+    <!-- 1. PERSISTENT TOP HEADER (Always visible) -->
+    <header class="app-header persistent-header">
+      <div class="brand">
+        <!-- Official Label + Lens Mark -->
+        <div class="brand-logo-mark" aria-hidden="true">
+          <svg width="30" height="30" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M7 6C5.89543 6 5 6.89543 5 8V24C5 25.1046 5.89543 26 7 26H18L27 17V8C27 6.89543 26.1046 6 25 6H7Z" fill="#1D2050" stroke="#C79A3E" stroke-width="2" stroke-linejoin="round"/>
+            <circle cx="10" cy="11" r="2" fill="#C79A3E"/>
+            <circle cx="21" cy="20" r="6.5" fill="#FCFBF7" stroke="#2B3380" stroke-width="2.5"/>
+            <line x1="25.5" y1="24.5" x2="31" y2="30" stroke="#2B3380" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">LabelLens</span>
+          <span class="brand-sub">Field Inspector Portal</span>
+        </div>
+      </div>
+
+      <div class="header-right-col">
+        <div class="officer-info-bell-row">
+          <div class="officer-profile-text">
+            <strong id="headerInspectorName">LMO Rajesh Kumar</strong>
+            <small id="headerInspectorBadge">LMO-DL-04 • Zone 4</small>
+          </div>
+          <!-- Bell notification button with count badge -->
+          <button type="button" class="header-bell-btn" id="headerBellBtn" aria-label="Notifications" title="Recapture Alerts">
+            <span class="bell-icon">🔔</span>
+            <span class="bell-badge-count hidden" id="headerAlertDot"></span>
+          </button>
+        </div>
+
+        <!-- Sign Out button stacked directly below officer info -->
+        <button type="button" class="btn-signout" id="btnSignOut" aria-label="Sign out">
+          Sign Out
+        </button>
+      </div>
+    </header>
+
+    <!-- 2. PERSISTENT BATCH STRIP (Directly under header, visible on every tab) -->
+    <section class="persistent-batch-strip" id="persistentBatchStrip" aria-label="Active Batch Summary">
+      <div class="batch-strip-content">
+        <div class="batch-strip-main">
+          <div class="batch-pill-row">
+            <span class="summary-pill" id="summaryBatchId">BATCH-2026-01</span>
+            <span class="summary-item-badge">
+              <span>Items:</span>
+              <strong id="summaryItemCount">0 / 15</strong>
+            </span>
+          </div>
+          <div class="summary-store" id="summaryStoreName">Modern Bazaar • Sector 18</div>
+        </div>
+        <button type="button" class="btn-secondary btn-new-batch-trigger" id="btnTriggerNewBatchModal">
+          + New Batch
+        </button>
+      </div>
+    </section>
+
+    <!-- 3. MAIN TAB CONTENT PANES -->
+    <main class="app-main inspector-main-content">
+
+      <!-- ===================================================================
+           TAB 1: CAMERA (Default/Landing Tab)
+           =================================================================== -->
+      <section class="tab-pane active" id="paneCamera" role="tabpanel" aria-labelledby="tabNavCamera">
+
+        <!-- Recapture Active Banner in Capture (if resolving an alert) -->
+        <div class="recapture-active-banner hidden" id="recaptureActiveBanner">
+          <div class="banner-text">
+            <strong>Recapturing Item: <span id="recaptureItemTitle">Item #1</span></strong>
+            <p id="recaptureOfficerNote">Officer note: Front PDP is blurry. Retake under direct light.</p>
+          </div>
+          <button type="button" class="btn-cancel-recapture" id="btnCancelRecapture">✕ Cancel</button>
+        </div>
+
+        <!-- Empty State when no active batch session -->
+        <div class="card camera-empty-state-card hidden" id="cameraNoBatchEmptyState">
+          <div class="camera-empty-icon-wrap">
+            <span class="camera-empty-icon">📋</span>
+          </div>
+          <h3 class="camera-empty-title">No Active Inspection Batch</h3>
+          <p class="camera-empty-desc">Start a new inspection batch or resume an unsubmitted draft to begin capturing product labels.</p>
+          <div class="camera-empty-actions">
+            <button type="button" class="btn-primary btn-start-batch-cta" id="btnCameraStartNewBatch">
+              + Start New Batch
+            </button>
+          </div>
+          <!-- Unsubmitted drafts notice in camera tab -->
+          <div class="camera-drafts-notice hidden" id="cameraDraftsNotice">
+            <div class="camera-drafts-notice-header">
+              <span class="notice-info-icon">ℹ️</span>
+              <p class="camera-drafts-notice-text">You have unsubmitted batches — complete and submit them, or start a new one.</p>
+            </div>
+            <div class="camera-drafts-list" id="cameraDraftsList"></div>
+          </div>
+        </div>
+
+        <!-- Primary Action: Upload Label Button -->
+        <div class="upload-trigger-container" id="uploadTriggerContainer">
+          <button type="button" class="btn-primary btn-upload-label" id="btnUploadLabel">
+            <span class="btn-upload-icon">📷</span>
+            <span class="btn-upload-label-text">Upload Label</span>
+          </button>
+          <p class="upload-trigger-hint">Tap to take live guided photos or select from gallery</p>
+        </div>
+
+        <!-- Item List Table Card (Shared component listing items in active batch) -->
+        <div class="card manifest-section-card" id="cameraItemListCard">
+          <div class="card-header manifest-header-flex">
+            <div>
+              <h3 class="card-title">Captured Items</h3>
+              <p class="card-description">Tap any item to view all photos.</p>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="manifest-table" id="cameraItemListTable">
+              <thead>
+                <tr>
+                  <th>Photos</th>
+                  <th>Product / Commodity</th>
+                  <th>Verdict</th>
+                  <th>Category</th>
+                  <th>Panels</th>
+                  <th>Confidence</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="cameraItemListTableBody">
+                <tr>
+                  <td colspan="7" class="table-empty">No items in this batch yet. Tap "Upload Label" above to begin capturing items.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ===================================================================
+           TAB 2: BATCH (Item List, Stats, Submission)
+           =================================================================== -->
+      <section class="tab-pane hidden" id="paneBatch" role="tabpanel" aria-labelledby="tabNavBatch">
+        
+        <!-- Batch Stats Card (Active Batch Only by default) -->
+        <div class="card batch-management-card">
+          <div class="card-header batch-stats-header-row">
+            <div class="batch-header-active-info">
+              <div class="batch-tab-pill-row">
+                <span class="summary-pill" id="batchTabBatchId">BATCH-2026-01</span>
+                <span class="history-status-tag pending_review" id="batchTabStatusBadge" style="background:#ECFDF5; color:#047857; border-color:#A7F3D0;">Active Session</span>
+                <button type="button" class="btn-switch-batch" id="btnSwitchBatch" title="Switch to another draft or submitted batch">Switch Batch ⇄</button>
+              </div>
+              <h3 class="card-title" id="batchTabStoreName" style="margin-top: 0.25rem;">Modern Bazaar • Sector 18</h3>
+              <span class="batch-kicker">Compliance Breakdown</span>
+            </div>
+            <span class="quota-badge" id="statQuotaText">0 / 15</span>
+          </div>
+
+          <!-- Item Stats Strip -->
+          <div class="batch-stats-grid">
+            <div class="stat-box">
+              <span class="stat-num" id="statTotalItems">0</span>
+              <span class="stat-label">Total Items</span>
+            </div>
+            <div class="stat-box stat-compliant">
+              <span class="stat-num" id="statCompliantItems">0</span>
+              <span class="stat-label">Compliant</span>
+            </div>
+            <div class="stat-box stat-noncompliant">
+              <span class="stat-num" id="statNonCompliantItems">0</span>
+              <span class="stat-label">Non-Compliant</span>
+            </div>
+          </div>
+
+          <!-- Progress Bar -->
+          <div class="batch-progress-box">
+            <div class="progress-track">
+              <div class="progress-fill" id="statProgressBar" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Item List Table Card (Renamed from Manifest) -->
+        <div class="card manifest-section-card">
+          <div class="card-header manifest-header-flex">
+            <div>
+              <h3 class="card-title">Item List</h3>
+              <p class="card-description">Review all captured items in this batch before submission.</p>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="manifest-table" id="itemListTable">
+              <thead>
+                <tr>
+                  <th>Photos</th>
+                  <th>Product / Commodity</th>
+                  <th>Verdict</th>
+                  <th>Category</th>
+                  <th>Panels</th>
+                  <th>Confidence</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="itemListTableBody">
+                <tr>
+                  <td colspan="7" class="table-empty">No items in this batch yet. Tap "Upload Label" in the Camera tab to begin.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="manifest-footer">
+            <div class="manifest-statutory-note">
+              Records will be transmitted to the Senior Reviewing Officer under Legal Metrology Act Sec 15/36.
+            </div>
+            <button type="button" class="btn-primary btn-submit-batch" id="btnSubmitBatch" disabled>
+              Submit Batch for Review →
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ===================================================================
+           TAB 3: ALERTS (Recapture Notices in full)
+           =================================================================== -->
+      <section class="tab-pane hidden" id="paneAlerts" role="tabpanel" aria-labelledby="tabNavAlerts">
+        
+        <div class="alerts-pane-container">
+          <div class="alerts-pane-header">
+            <h2 class="card-title">Departmental Alerts &amp; Recapture Notices</h2>
+            <p class="card-description">Action items returned by the Reviewing Officer requiring on-site photo recapture.</p>
+          </div>
+
+          <!-- Active Recapture Notices List -->
+          <div class="alerts-list" id="alertsListContainer">
+            <!-- Populated via JS -->
+          </div>
+
+          <!-- Empty State when no alerts -->
+          <div class="alerts-empty-card hidden" id="alertsEmptyCard">
+            <div class="empty-badge-check">✓</div>
+            <h3 class="empty-title">All Clear</h3>
+            <p class="empty-desc">There are no pending alerts or item recapture requests from the Reviewing Officer.</p>
+            <button type="button" class="btn-secondary btn-test-recapture" id="btnTestRecapture" style="margin-top: 1rem; font-size: 0.8rem; padding: 0.5rem 1rem;">
+              + Simulate Sample Recapture Notice (Demo)
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ===================================================================
+           TAB 4: HISTORY (Past Submitted Batches & Read-Only Review)
+           =================================================================== -->
+      <section class="tab-pane hidden" id="paneHistory" role="tabpanel" aria-labelledby="tabNavHistory">
+        
+        <!-- History Batches List View -->
+        <div id="historyBatchesView">
+          <div class="card history-header-card">
+            <div class="card-header">
+              <h3 class="card-title">Submitted Batches</h3>
+              <p class="card-description">Review all completed inspection batches submitted to jurisdictional review.</p>
+            </div>
+          </div>
+
+          <div class="history-batches-list" id="historyBatchesList">
+            <div class="table-empty">Loading submitted batches...</div>
+          </div>
+        </div>
+
+        <!-- History Batch Detail View (Read-Only) -->
+        <div class="hidden" id="historyBatchDetailView">
+          <div class="card history-detail-header-card">
+            <div class="history-detail-nav-row">
+              <button type="button" class="btn-secondary btn-history-back" id="btnHistoryBackToList">
+                ← Back to History
+              </button>
+              <span class="history-readonly-badge">🔒 Read-Only Record</span>
+            </div>
+            <div class="history-detail-info">
+              <h3 class="history-detail-title" id="historyDetailTitle">Batch Details</h3>
+              <p class="history-detail-meta" id="historyDetailMeta">Store • Date Submitted</p>
+            </div>
+          </div>
+
+          <div class="card manifest-section-card">
+            <div class="card-header manifest-header-flex">
+              <div>
+                <h3 class="card-title">Batch Items</h3>
+                <p class="card-description">Tap any item to inspect its photos and declarations.</p>
+              </div>
+            </div>
+
+            <div class="table-wrapper">
+              <table class="manifest-table" id="historyItemsTable">
+                <thead>
+                  <tr>
+                    <th>Photos</th>
+                    <th>Product / Commodity</th>
+                    <th>Verdict</th>
+                    <th>Category</th>
+                    <th>Panels</th>
+                    <th>Confidence</th>
+                    <th style="text-align: right;">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="historyItemsTableBody">
+                  <tr>
+                    <td colspan="7" class="table-empty">Loading items...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!-- 4. FIXED BOTTOM TAB BAR (4 Tabs: Camera, Batch, Alerts, History) -->
+    <nav class="inspector-bottom-nav" id="inspectorBottomNav" aria-label="Inspector Navigation">
+      <button type="button" class="tab-item active" data-tab="camera" id="tabNavCamera">
+        <span class="tab-item-icon">📷</span>
+        <span class="tab-item-text">Camera</span>
+      </button>
+      
+      <button type="button" class="tab-item" data-tab="batch" id="tabNavBatch">
+        <span class="tab-item-icon">📦</span>
+        <span class="tab-item-text">Batch</span>
+        <span class="tab-count-badge" id="tabBatchBadge">0</span>
+      </button>
+      
+      <button type="button" class="tab-item" data-tab="alerts" id="tabNavAlerts">
+        <span class="tab-item-icon">🔔</span>
+        <span class="tab-item-text">Alerts</span>
+        <span class="tab-alert-badge hidden" id="tabAlertBadge">0</span>
+      </button>
+
+      <button type="button" class="tab-item" data-tab="history" id="tabNavHistory">
+        <span class="tab-item-icon">📜</span>
+        <span class="tab-item-text">History</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- =====================================================================
+       UPLOAD SELECTION MODAL / BOTTOM SHEET (Camera vs Gallery)
+       ===================================================================== -->
+  <div class="modal-backdrop hidden" id="uploadOptionsModal" role="dialog" aria-modal="true" aria-labelledby="uploadModalTitle">
+    <div class="action-sheet-card">
+      <div class="sheet-header">
+        <h3 class="sheet-title" id="uploadModalTitle">Capture Item Label</h3>
+        <button type="button" class="sheet-close" id="btnCloseUploadModal" aria-label="Close">✕</button>
+      </div>
+      
+      <p class="sheet-sub">Choose how you want to provide item label photos:</p>
+
+      <div class="sheet-options-grid">
+        <!-- Option 1: Live Guided Camera -->
+        <button type="button" class="sheet-option-btn option-camera" id="btnChooseCamera">
+          <div class="option-icon">📸</div>
+          <div class="option-text">
+            <strong>Take Photo</strong>
+            <small>Angle-guided live camera (Front PDP → Back → Side)</small>
+          </div>
+        </button>
+
+        <!-- Option 2: Choose from Gallery (Multi-Select) -->
+        <button type="button" class="sheet-option-btn option-gallery" id="btnChooseGallery">
+          <div class="option-icon">🖼️</div>
+          <div class="option-text">
+            <strong>Choose from Gallery</strong>
+            <small>Multi-select photos; automatically assigned to Front, Back &amp; Side</small>
+          </div>
+        </button>
+      </div>
+
+      <!-- Hidden Multi-File Input for Gallery -->
+      <input type="file" id="inputGalleryMulti" multiple accept="image/*" class="hidden" />
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       SWAP PHOTO MODAL
+       ===================================================================== -->
+  <div class="modal-backdrop hidden" id="swapModal" role="dialog" aria-modal="true">
+    <div class="modal-card swap-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Replace or Swap Angle</h3>
+        <button type="button" class="modal-close" id="btnCloseSwapModal">✕</button>
+      </div>
+      <p class="sheet-sub" id="swapModalSubtitle">Select a target slot to swap with, or upload a new photo:</p>
+      
+      <div class="swap-actions-list" id="swapActionsList">
+        <!-- Generated dynamically -->
+      </div>
+      <input type="file" id="inputSingleSwap" accept="image/*" class="hidden" />
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       UNSUBMITTED BATCH DRAFT WARNING MODAL
+       ===================================================================== -->
+  <div class="modal-backdrop hidden" id="draftWarningModal" role="dialog" aria-modal="true" aria-labelledby="draftWarningTitle">
+    <div class="modal-card warning-card">
+      <div class="modal-header">
+        <div class="warning-title-wrap">
+          <span class="warning-icon-pill">⚠️ Unsubmitted Batch</span>
+          <h3 class="modal-title" id="draftWarningTitle">Batch In Progress</h3>
+        </div>
+        <button type="button" class="modal-close" id="btnCloseDraftWarningModal" aria-label="Close dialog">✕</button>
+      </div>
+      <div class="warning-body">
+        <p class="warning-msg" id="draftWarningMsg">
+          Your current batch has captured items that haven't been submitted for review yet. What would you like to do before starting a new batch?
+        </p>
+        <div class="warning-actions-column">
+          <!-- Choice 1: Finish it -->
+          <button type="button" class="btn-warning-action btn-stay" id="btnWarningFinish">
+            <div class="warning-btn-text">
+              <strong>Finish it</strong>
+              <small>Cancel starting a new batch and stay on current batch</small>
+            </div>
+            <span class="warning-btn-arrow">✕</span>
+          </button>
+
+          <!-- Choice 2: Send to Review -->
+          <button type="button" class="btn-warning-action btn-submit" id="btnWarningSendReview">
+            <div class="warning-btn-text">
+              <strong>Send to Review</strong>
+              <small>Submit current batch immediately, then proceed to new batch</small>
+            </div>
+            <span class="warning-btn-arrow">→</span>
+          </button>
+
+          <!-- Choice 3: Save as Draft -->
+          <button type="button" class="btn-warning-action btn-draft" id="btnWarningSaveDraft">
+            <div class="warning-btn-text">
+              <strong>Save as Draft</strong>
+              <small>Keep current batch saved as draft to resume later</small>
+            </div>
+            <span class="warning-btn-arrow">💾</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       NEW BATCH ESTABLISHMENT MODAL
+       ===================================================================== -->
+  <div class="modal-backdrop hidden" id="newBatchModal" role="dialog" aria-modal="true" aria-labelledby="newBatchModalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="newBatchModalTitle">Start New Inspection Batch</h3>
+        <button type="button" class="modal-close" id="btnCloseNewBatchModal" aria-label="Close dialog">✕</button>
+      </div>
+      <form id="newBatchSessionForm">
+        <div class="form-group">
+          <label for="modalStoreName" class="form-label">Establishment / Store Name *</label>
+          <input type="text" id="modalStoreName" class="form-input" placeholder="e.g. Modern Bazaar, Sector 18" required autocomplete="off" />
+        </div>
+        <div class="form-group">
+          <label for="modalStoreLocation" class="form-label">Address / Location *</label>
+          <input type="text" id="modalStoreLocation" class="form-input" placeholder="e.g. Connaught Place, New Delhi" required autocomplete="off" />
+        </div>
+        <button type="submit" class="btn-primary btn-modal-submit" id="btnSubmitNewBatchForm">
+          Create &amp; Activate Batch
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       CONTINUOUS GUIDED CAMERA MODAL (Full-screen Mobile Viewfinder)
+       ===================================================================== -->
+  <div class="modal-overlay hidden" id="guidedCameraModal" role="dialog" aria-modal="true">
+    <div class="camera-modal-dialog">
+      
+      <!-- Top Guidance Header with Notches/Dynamic Island Safe-Area -->
+      <div class="camera-modal-header">
+        <div class="camera-step-info">
+          <h3 class="camera-angle-title" id="cameraAngleTitle">1. Front Panel (Mandatory)</h3>
+          <p class="camera-angle-prompt" id="cameraAnglePrompt">Align Front Panel inside frame: Commodity Name, Net Qty, MRP &amp; USP.</p>
+        </div>
+        <div class="camera-header-actions">
+          <button type="button" class="btn-camera-skip hidden" id="btnCameraSkip" title="Skip this angle">Skip →</button>
+          <button type="button" class="camera-close-btn" id="btnCameraClose" aria-label="Close camera">✕</button>
+        </div>
+      </div>
+
+      <!-- Live Viewport & Preview -->
+      <div class="camera-viewport-box">
+        <video id="cameraStreamVideo" autoplay playsinline muted></video>
+        <canvas id="cameraCaptureCanvas" class="hidden"></canvas>
+        <img id="cameraSnapshotPreview" class="hidden" alt="Snapshot Preview" />
+        
+        <!-- Reticle Targeting Frame Overlay -->
+        <div class="camera-guide-frame">
+          <div class="frame-corner top-left"></div>
+          <div class="frame-corner top-right"></div>
+          <div class="frame-corner bottom-left"></div>
+          <div class="frame-corner bottom-right"></div>
+        </div>
+
+        <div class="camera-blur-badge hidden" id="cameraBlurBadge">✓ Sharp Frame</div>
+      </div>
+
+      <!-- Camera Bottom Controls Bar -->
+      <div class="camera-controls-bar">
+        <!-- Live Camera Mode (Shutter) -->
+        <div class="live-mode-controls" id="cameraLiveControls">
+          <button type="button" class="btn-shutter" id="btnCameraShutter" title="Take Photo">
+            <span class="shutter-inner"></span>
+          </button>
+          <div class="shutter-hint">Tap circle to capture</div>
+        </div>
+
+        <!-- Review Mode (Retake & Confirm & Next - Plain wording) -->
+        <div class="review-mode-controls hidden" id="cameraReviewControls">
+          <button type="button" class="btn-camera-action btn-camera-cross" id="btnCameraCross" title="Retake this angle">
+            <span class="action-text">Retake</span>
+          </button>
+
+          <button type="button" class="btn-camera-action btn-camera-tick" id="btnCameraTick" title="Confirm and proceed immediately">
+            <span class="action-text">Confirm &amp; Next</span>
+          </button>
+        </div>
+
+        <!-- Post Guided Slots Controls (Next Item, Extra Angle, Done) -->
+        <div class="camera-post-guided-controls hidden" id="cameraPostGuidedControls">
+          <button type="button" class="btn-primary btn-camera-next-item" id="btnCameraNextItem" title="Save item and immediately capture next item">
+            Next Item →
+          </button>
+          <div class="post-guided-sub-actions">
+            <button type="button" class="btn-secondary btn-extra-photo" id="btnAddExtraPhoto">
+              + Extra Angle
+            </button>
+            <button type="button" class="btn-tertiary btn-finish-camera" id="btnFinishCamera">
+              Done (View Items)
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Hidden Photo Replacement File Input -->
+  <input type="file" id="inputReplacePhoto" accept="image/*" class="hidden" />
+
+  <!-- =====================================================================
+       FULL-SIZE PHOTO LIGHTBOX MODAL
+       ===================================================================== -->
+  <div class="modal-backdrop hidden" id="photoLightboxModal" role="dialog" aria-modal="true" aria-labelledby="lightboxTitle">
+    <div class="lightbox-dialog">
+      <div class="lightbox-header">
+        <div class="lightbox-title-box">
+          <h4 class="lightbox-title" id="lightboxTitle">Front Panel (PDP)</h4>
+          <span class="lightbox-subtitle" id="lightboxSubtitle">High-resolution item inspection</span>
+        </div>
+        <button type="button" class="btn-lightbox-close" id="btnLightboxClose" title="Close large view">✕</button>
+      </div>
+
+      <div class="lightbox-body">
+        <img src="" alt="Full size view" class="lightbox-img" id="lightboxImg" />
+      </div>
+
+      <div class="lightbox-footer" id="lightboxFooter">
+        <button type="button" class="btn-secondary btn-lightbox-action" id="btnLightboxReplace">
+          🔄 Replace
+        </button>
+        <button type="button" class="btn-danger btn-lightbox-action" id="btnLightboxRemove">
+          🗑️ Remove
+        </button>
+        <button type="button" class="btn-primary btn-lightbox-action" id="btnLightboxKeep">
+          Keep as-is
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       SWITCH BATCH MODAL (Drafts & Submitted Batches)
+       ===================================================================== -->
+  <div class="modal-backdrop hidden" id="switchBatchModal" role="dialog" aria-modal="true" aria-labelledby="switchBatchModalTitle">
+    <div class="modal-card switch-batch-modal-card">
+      <div class="modal-header">
+        <div class="modal-header-text">
+          <h3 class="modal-title" id="switchBatchModalTitle">Switch Inspection Batch</h3>
+          <p class="modal-subtitle">Resume an unsubmitted draft or view submitted batches.</p>
+        </div>
+        <button type="button" id="btnCloseSwitchBatchModal" class="modal-close" aria-label="Close modal">×</button>
+      </div>
+      <div class="modal-body switch-batch-modal-body">
+        <!-- Drafts Section -->
+        <div class="switch-batch-section">
+          <div class="switch-batch-section-header">
+            <h4 class="switch-section-title">Unsubmitted Draft Batches</h4>
+            <span id="switchDraftsCount" class="switch-count-badge draft">0</span>
+          </div>
+          <div id="switchDraftsList" class="switch-batches-list">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+
+        <!-- Submitted Section -->
+        <div class="switch-batch-section" style="margin-top: 1.25rem;">
+          <div class="switch-batch-section-header">
+            <h4 class="switch-section-title">Submitted to Reviewing Officer</h4>
+            <span id="switchSubmittedCount" class="switch-count-badge submitted">0</span>
+          </div>
+          <div id="switchSubmittedList" class="switch-batches-list">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       IN-APP CONFIRMATION MODAL (Replaces native browser confirm)
+       ===================================================================== -->
+  <div class="modal-backdrop hidden" id="appConfirmModal" role="dialog" aria-modal="true" aria-labelledby="appConfirmTitle">
+    <div class="modal-card app-dialog-card">
+      <div class="modal-header">
+        <div class="dialog-title-row">
+          <span class="dialog-icon confirm-icon">❓</span>
+          <h3 class="modal-title" id="appConfirmTitle">Confirm Action</h3>
+        </div>
+        <button type="button" class="modal-close" id="btnAppConfirmClose" aria-label="Close modal">×</button>
+      </div>
+      <div class="modal-body app-dialog-body">
+        <p id="appConfirmMessage" class="app-dialog-message"></p>
+      </div>
+      <div class="modal-actions app-dialog-actions">
+        <button type="button" class="btn-secondary" id="btnAppConfirmCancel">Cancel</button>
+        <button type="button" class="btn-primary" id="btnAppConfirmOk">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =====================================================================
+       IN-APP ALERT MODAL (Replaces native browser alert)
+       ===================================================================== -->
+  <div class="modal-backdrop hidden" id="appAlertModal" role="dialog" aria-modal="true" aria-labelledby="appAlertTitle">
+    <div class="modal-card app-dialog-card">
+      <div class="modal-header">
+        <div class="dialog-title-row">
+          <span id="appAlertIcon" class="dialog-icon alert-icon">ℹ️</span>
+          <h3 class="modal-title" id="appAlertTitle">Notice</h3>
+        </div>
+        <button type="button" class="modal-close" id="btnAppAlertClose" aria-label="Close modal">×</button>
+      </div>
+      <div class="modal-body app-dialog-body">
+        <p id="appAlertMessage" class="app-dialog-message"></p>
+      </div>
+      <div class="modal-actions app-dialog-actions">
+        <button type="button" class="btn-primary" id="btnAppAlertOk">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="auth.js"></script>
+  <script src="camera.js"></script>
+  <script src="inspector.js"></script>
+</body>
+</html>

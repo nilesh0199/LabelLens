@@ -1,0 +1,965 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1E1B4B">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>LabelLens - Legal Metrology Regulatory Enforcement</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+          </svg>
+        </div>
+        <div class="brand-text">
+          <span class="brand-name">LabelLens</span>
+          <span class="brand-tagline">Legal Metrology Inspection Bureau</span>
+        </div>
+      </div>
+
+      <!-- Active Role Selector Dropdown -->
+      <div class="role-selector-container">
+        <label for="activeRoleSelect" class="role-label">Active Role:</label>
+        <select id="activeRoleSelect" class="role-select">
+          <option value="inspector" selected>👮‍♂️ Field Inspector (LMO Rajesh Kumar)</option>
+          <option value="officer">⚖️ Reviewing Officer (Asst. Controller Dr. Sharma)</option>
+        </select>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="app-tabs">
+        <button type="button" class="tab-btn active" id="tabInspector" data-target="viewInspector">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 5px;">
+            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+          </svg>
+          Inspector field
+        </button>
+        <button type="button" class="tab-btn" id="tabOfficer" data-target="viewOfficer">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 5px;">
+            <path d="m9 12 2 2 4-4"></path>
+            <path d="M5 7c0-1.1.9-2 2-2h10a2 2 0 0 1 2 2v12H5V7Z"></path>
+            <path d="M22 19H2"></path>
+          </svg>
+          Reviewing officer
+          <span class="tab-badge" id="officerPendingBadge">0</span>
+        </button>
+        <button type="button" class="tab-btn" id="tabCheck" data-target="viewCheck">
+          Single scan
+        </button>
+        <button type="button" class="tab-btn" id="tabHistory" data-target="viewHistory">
+          Audit ledger
+          <span class="tab-badge" id="historyBadge">0</span>
+        </button>
+      </nav>
+
+      <!-- System Status -->
+      <div class="status-indicator" id="systemStatus">
+        <span class="status-dot"></span>
+        <span class="status-text">Online</span>
+      </div>
+    </header>
+
+    <!-- Main Views -->
+    <main class="app-main">
+      <!-- VIEW 0: Field Inspector Dashboard (SIH Stage 1) -->
+      <section class="view-panel" id="viewInspector">
+        <!-- Inspector Profile & Metrics Header -->
+        <div class="inspector-profile-card card">
+          <div class="inspector-profile-content">
+            <div class="inspector-avatar">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </div>
+            <div class="inspector-info">
+              <div class="inspector-name-row">
+                <h2 class="inspector-name" id="inspectorNameDisplay">Rajesh Kumar</h2>
+                <span class="role-tag">Inspector of Legal Metrology</span>
+                <span class="jurisdiction-tag" id="jurisdictionDisplay">📍 Central District, Circle 2</span>
+              </div>
+              <div class="inspector-subtext">
+                State Enforcement Cadre • Legal Metrology (Packaged Commodities) Rules, 2011 • Section 36 Authority
+              </div>
+            </div>
+          </div>
+          <div class="inspector-metrics-row">
+            <div class="metric-pill">
+              <span class="metric-pill-num" id="statActiveItems">0</span>
+              <span class="metric-pill-lbl">Active batch items</span>
+            </div>
+            <div class="metric-pill">
+              <span class="metric-pill-num" id="statPendingBatches">0</span>
+              <span class="metric-pill-lbl">Batches in review</span>
+            </div>
+            <div class="metric-pill" id="statRecapturePill">
+              <span class="metric-pill-num" id="statRecaptures">0</span>
+              <span class="metric-pill-lbl">Recaptures needed</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recapture Alert Banner (Shown when Reviewing Officer sent back an item) -->
+        <div class="recapture-alert-banner hidden" id="recaptureAlertBanner">
+          <div class="recapture-alert-icon">⚠️</div>
+          <div class="recapture-alert-body">
+            <div class="recapture-alert-title">Specimen Returned for Recapture by Reviewing Officer</div>
+            <div class="recapture-alert-desc" id="recaptureAlertDesc">1 or more specimens were unreadable or blurry and require on-site recapture.</div>
+          </div>
+        </div>
+
+        <!-- Batch Session Controller -->
+        <div class="card batch-session-card" id="batchSessionCard">
+          <!-- State A: No Active Batch Form -->
+          <div class="batch-starter-view" id="batchStarterView">
+            <div class="card-header">
+              <h3 class="card-title">Start Retail Inspection Session</h3>
+              <p class="card-description">Create an inspection batch before scanning store specimens (standard session: 10–15 items).</p>
+            </div>
+            <form id="newBatchForm" class="batch-form-inline">
+              <div class="form-group-inline">
+                <label for="storeNameInput">Store / Supermarket Name:</label>
+                <input type="text" id="storeNameInput" placeholder="e.g. Spencers Hypermarket, Shop #4" required />
+              </div>
+              <div class="form-group-inline">
+                <label for="storeLocationInput">Store Location / Circle Address:</label>
+                <input type="text" id="storeLocationInput" placeholder="e.g. Connaught Place, Block B, New Delhi" required />
+              </div>
+              <button type="submit" class="btn-primary" id="btnStartBatch">
+                Start inspection batch
+              </button>
+            </form>
+          </div>
+
+          <!-- State B: Active Batch Header -->
+          <div class="batch-active-view hidden" id="batchActiveView">
+            <div class="batch-active-left">
+              <div class="batch-tag-row">
+                <span class="batch-badge" id="activeBatchIdDisplay">BATCH-20260912-0000</span>
+                <span class="batch-status-tag" id="activeBatchStatusDisplay">Drafting Session</span>
+              </div>
+              <div class="batch-store-title" id="activeStoreDisplay">Retail Inspection Store</div>
+            </div>
+            <div class="batch-active-center">
+              <div class="progress-label-row">
+                <span class="progress-lbl-text">Session Specimen Target</span>
+                <span class="progress-lbl-val" id="batchItemCountDisplay">0 / 15 items</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill" id="batchProgressBar" style="width: 0%;"></div>
+              </div>
+            </div>
+            <div class="batch-active-right">
+              <button type="button" class="btn-secondary" id="btnNewBatchSession">New session</button>
+              <button type="button" class="btn-primary" id="btnSubmitBatchReview">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 5px;">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+                Submit batch for review
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Specimen Capture Grid (Angle-Guided Upload + Real-Time Evaluation) -->
+        <div class="grid-layout inspector-layout">
+          <!-- Left: 3-Angle Specimen Capture -->
+          <div class="card capture-card">
+            <div class="card-header">
+              <h3 class="card-title">Angle-guided specimen capture</h3>
+              <p class="card-description">Capture 1 to 3 angles. Physical packages carry declarations across multiple panels.</p>
+            </div>
+
+            <form id="inspectorCaptureForm" class="capture-form">
+              <!-- 3 Slots: Front, Back, Side -->
+              <div class="angle-slots-container">
+                <!-- Slot 1: Front Panel (PDP) -->
+                <div class="angle-slot-card" id="slotFront">
+                  <div class="angle-slot-header">
+                    <span class="angle-title">1. Front Panel (PDP)</span>
+                    <span class="badge-mandatory">Mandatory</span>
+                  </div>
+                  <p class="angle-guide-hint">Principal Display Panel: Commodity Name, Net Qty, MRP & Unit Price.</p>
+                  <div class="angle-dropzone" id="dropzoneFront" data-angle="front">
+                    <input type="file" id="fileFront" accept="image/*" capture="environment" class="angle-file-input" required />
+                    <div class="angle-drop-prompt" id="promptFront">
+                      <span class="camera-icon">📷</span>
+                      <span class="drop-text">Tap to capture or drop Front photo</span>
+                    </div>
+                    <div class="angle-preview hidden" id="previewFrontContainer">
+                      <img id="previewFrontImg" alt="Front Preview" />
+                      <div class="angle-blur-badge" id="blurFrontBadge">Checking...</div>
+                      <button type="button" class="btn-remove-angle" data-angle="front">✕</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Slot 2: Back Panel (Info Panel) -->
+                <div class="angle-slot-card" id="slotBack">
+                  <div class="angle-slot-header">
+                    <span class="angle-title">2. Back Panel (Info)</span>
+                    <span class="badge-recommended">Recommended</span>
+                  </div>
+                  <p class="angle-guide-hint">Manufacturer details, Consumer care, Dates & Ingredients.</p>
+                  <div class="angle-dropzone" id="dropzoneBack" data-angle="back">
+                    <input type="file" id="fileBack" accept="image/*" capture="environment" class="angle-file-input" />
+                    <div class="angle-drop-prompt" id="promptBack">
+                      <span class="camera-icon">📷</span>
+                      <span class="drop-text">Tap to capture or drop Back photo</span>
+                    </div>
+                    <div class="angle-preview hidden" id="previewBackContainer">
+                      <img id="previewBackImg" alt="Back Preview" />
+                      <div class="angle-blur-badge" id="blurBackBadge">Checking...</div>
+                      <button type="button" class="btn-remove-angle" data-angle="back">✕</button>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Slot 3: Side / Detail Panel -->
+                <div class="angle-slot-card" id="slotSide">
+                  <div class="angle-slot-header">
+                    <span class="angle-title">3. Side / Detail Panel</span>
+                    <span class="badge-optional">Optional</span>
+                  </div>
+                  <p class="angle-guide-hint">Barcode, Dimensions, or Additional statutory markings.</p>
+                  <div class="angle-dropzone" id="dropzoneSide" data-angle="side">
+                    <input type="file" id="fileSide" accept="image/*" capture="environment" class="angle-file-input" />
+                    <div class="angle-drop-prompt" id="promptSide">
+                      <span class="camera-icon">📷</span>
+                      <span class="drop-text">Tap to capture or drop Side photo</span>
+                    </div>
+                    <div class="angle-preview hidden" id="previewSideContainer">
+                      <img id="previewSideImg" alt="Side Preview" />
+                      <div class="angle-blur-badge" id="blurSideBadge">Checking...</div>
+                      <button type="button" class="btn-remove-angle" data-angle="side">✕</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Blur Warning Callout -->
+              <div class="blur-warning-banner hidden" id="blurWarningBanner">
+                <span class="warning-icon">⚠️</span>
+                <span class="warning-text">
+                  <strong>Blurry photo detected:</strong> One or more angles has low sharpness (<span id="blurScoreDisplay">--</span>). Recapturing now prevents the Reviewing Officer from rejecting the specimen.
+                </span>
+              </div>
+
+              <div class="capture-actions">
+                <button type="submit" id="btnScanSpecimen" class="btn-primary btn-large" disabled>
+                  <span class="btn-text">Run multi-angle compliance scan</span>
+                  <span class="spinner hidden" id="scanSpinner"></span>
+                </button>
+                <button type="button" id="btnResetCapture" class="btn-secondary">Clear slots</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Right: Specimen Evaluation & Rule 6 Breakdown -->
+          <div class="card evaluation-card" id="evaluationCard">
+            <div class="card-header">
+              <h3 class="card-title">Specimen compliance analysis</h3>
+              <p class="card-description">Pre-submission Rule 6 verification & automatic product classification.</p>
+            </div>
+
+            <!-- Evaluation Empty State -->
+            <div class="state-container empty-state" id="evalEmptyState">
+              <div class="empty-icon">⚖️</div>
+              <p class="state-message">Select specimen photos and click <strong>Run multi-angle compliance scan</strong> to analyze.</p>
+            </div>
+
+            <!-- Evaluation Loading State -->
+            <div class="state-container loading-state hidden" id="evalLoadingState">
+              <div class="loader-spinner"></div>
+              <p class="state-message">Running auto-deskew, multi-angle OCR, and Rule 6 statutory evaluation...</p>
+            </div>
+
+            <!-- Evaluation Content -->
+            <div class="eval-content hidden" id="evalContent">
+              <!-- Top Title, Category & Verdict Pill -->
+              <div class="eval-header-block">
+                <div class="eval-product-title-row">
+                  <div>
+                    <h4 class="eval-product-title" id="evalProductTitle">Packaged Commodity</h4>
+                    <span class="category-pill" id="evalCategoryPill">General Commodity</span>
+                  </div>
+                  <div class="eval-verdict-box">
+                    <span class="status-pill status-compliant" id="evalVerdictPill">
+                      <span class="pill-dot"></span>
+                      <span id="evalVerdictText">Compliant</span>
+                    </span>
+                    <span class="specimen-id-badge" id="evalItemIdBadge">ITEM-00000000</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Per-Photo & Blended Confidence Metrics -->
+              <div class="confidence-box">
+                <div class="blended-metric-row">
+                  <span class="metric-label">Blended Overall Confidence:</span>
+                  <span class="metric-val-large" id="evalBlendedConfidence">0%</span>
+                </div>
+                <div class="per-photo-confidence-row" id="perPhotoConfidenceList">
+                  <!-- Populated dynamically with Front, Back, Side badges -->
+                </div>
+              </div>
+
+              <!-- Rule 6 Declarations Checklist (All 10 Sub-rules) -->
+              <div class="rule6-checklist-container">
+                <div class="checklist-header">
+                  <span class="checklist-title">Legal Metrology Rules, 2011 • Rule 6 Declarations</span>
+                  <span class="checklist-count" id="evalRule6Count">0 / 10 Found</span>
+                </div>
+                <div class="rule6-items-grid" id="rule6Checklist">
+                  <!-- 10 Rule 6 Cards populated dynamically -->
+                </div>
+              </div>
+
+              <!-- Rule 9 & Observations -->
+              <div class="rule9-box" id="rule9Box">
+                <div class="rule9-header">
+                  <span class="rule9-icon">ℹ️</span>
+                  <strong>Rule 9 Observations & Legal Notices:</strong>
+                </div>
+                <div class="rule9-text" id="rule9Text">PDP analysis complete.</div>
+              </div>
+
+              <!-- Cleaned Label Summary -->
+              <div class="ocr-group" style="margin-top: 12px;">
+                <span class="group-title" style="font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase;">Extracted Statutory Summary:</span>
+                <pre class="ocr-text-box" id="evalCleanedSummaryBox" style="max-height: 110px;">(No summary)</pre>
+              </div>
+
+              <!-- Actions: Add to Batch or Discard -->
+              <div class="eval-actions-footer">
+                <button type="button" class="btn-primary" id="btnAddToBatch">
+                  ✓ Add specimen to active batch
+                </button>
+                <button type="button" class="btn-secondary" id="btnDiscardSpecimen">
+                  Discard & recapture
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Batch Manifest (All items scanned in this session) -->
+        <div class="card manifest-card">
+          <div class="manifest-header">
+            <div>
+              <h3 class="card-title">Inspection batch manifest</h3>
+              <p class="card-description">Physical specimens examined during this store inspection session before submitting to Reviewing Officer.</p>
+            </div>
+            <div class="manifest-stats-chips">
+              <span class="chip-total" id="manifestTotalCount">Total: 0</span>
+              <span class="chip-compliant" id="manifestCompliantCount">Compliant: 0</span>
+              <span class="chip-noncompliant" id="manifestNonCompliantCount">Non-Compliant: 0</span>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="manifest-table" id="manifestTable">
+              <thead>
+                <tr>
+                  <th>Specimen</th>
+                  <th>Commodity / Brand</th>
+                  <th>Category</th>
+                  <th>Panels</th>
+                  <th>Blended Conf</th>
+                  <th>Verdict</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="manifestTableBody">
+                <tr>
+                  <td colspan="7" class="table-empty">No specimens added to this batch yet. Scan a packaging specimen above to add.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="manifest-footer">
+            <div class="manifest-footer-note">
+              <em>Note: Submitting a batch submits it to the Assistant/Deputy Controller for jurisdictional review. Records become permanent once approved.</em>
+            </div>
+            <button type="button" class="btn-primary" id="btnSubmitBatchManifest" disabled>
+              Submit batch for review
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 1: Check Compliance (Single Specimen) -->
+      <section class="view-panel hidden" id="viewCheck">
+        <div class="grid-layout">
+          <!-- Left Column: Upload & Actions -->
+          <div class="card upload-card">
+            <div class="card-header">
+              <h2 class="card-title">Upload label photo</h2>
+              <p class="card-description">Upload a packaging photo to run compliance analysis and manual review.</p>
+            </div>
+
+            <form id="uploadForm" class="upload-form">
+              <!-- Minimal Dropzone -->
+              <div class="dropzone" id="dropzone">
+                <input type="file" id="fileInput" name="file" accept="image/*" class="file-input" required />
+                
+                <div class="dropzone-prompt" id="dropzonePrompt">
+                  <div class="upload-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                      <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
+                  </div>
+                  <div class="prompt-text">
+                    <span class="prompt-title">Drop an image here or click to browse</span>
+                    <span class="prompt-subtitle">PNG, JPG, JPEG, WEBP</span>
+                  </div>
+                </div>
+
+                <!-- Image Preview -->
+                <div class="preview-container hidden" id="previewContainer">
+                  <img id="imagePreview" alt="Label Preview" class="preview-image" />
+                  <div class="preview-details">
+                    <div class="file-info">
+                      <span class="file-name" id="fileName">image.png</span>
+                      <span class="file-size" id="fileSize">0 KB</span>
+                    </div>
+                    <button type="button" class="btn-text-danger" id="removeFileBtn">Remove</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Initial Action Button -->
+              <div id="initialActionContainer">
+                <button type="submit" id="submitBtn" class="btn-primary" disabled>
+                  <span class="btn-text">Check compliance</span>
+                  <span class="spinner hidden" id="btnSpinner"></span>
+                </button>
+              </div>
+
+              <!-- Post-Result Actions (Draft & Finalized States) -->
+              <div id="postResultActions" class="post-result-actions hidden">
+                <button type="button" id="btnNewScanLeft" class="btn-secondary">
+                  New scan
+                </button>
+                <button type="button" id="btnFinalizeLeft" class="btn-primary">
+                  Confirm & finalize
+                </button>
+                <button type="button" id="btnDownloadReportLeft" class="btn-primary hidden">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                  Download report
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Right Column: Results -->
+          <div class="card results-card" id="resultsCard">
+            <div class="card-header">
+              <h2 class="card-title">Results</h2>
+              <p class="card-description">Review compliance declarations, edit detected values, and finalize.</p>
+            </div>
+
+            <!-- Empty State -->
+            <div class="state-container empty-state" id="emptyState">
+              <div class="empty-icon">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="16" x2="12" y2="12"></line>
+                  <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                </svg>
+              </div>
+              <p class="state-message">Upload an image and click <strong>Check compliance</strong> to view the analysis.</p>
+            </div>
+
+            <!-- Loading State -->
+            <div class="state-container loading-state hidden" id="loadingState">
+              <div class="loader-spinner"></div>
+              <p class="state-message">Executing auto-deskew & label compliance analysis...</p>
+            </div>
+
+            <!-- Error State -->
+            <div class="state-container error-state hidden" id="errorState">
+              <div class="error-badge">Error</div>
+              <p class="state-message" id="errorMessageText">Unable to complete analysis. Please verify your backend server.</p>
+              <button type="button" class="btn-secondary" id="retryBtn">Try again</button>
+            </div>
+
+            <!-- Active Report View -->
+            <div class="results-content hidden" id="resultsContent">
+              <!-- Manual Review Recommendation Banner -->
+              <div class="review-banner hidden" id="reviewBanner">
+                <div class="banner-icon">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                  </svg>
+                </div>
+                <span class="banner-text" id="reviewBannerText">Manual inspection recommended — declarations missing</span>
+              </div>
+
+              <!-- Verdict Header -->
+              <div class="verdict-header">
+                <div class="verdict-status">
+                  <span class="status-pill status-noncompliant" id="verdictPill">
+                    <span class="pill-dot"></span>
+                    <span id="verdictPillText">Not compliant</span>
+                  </span>
+                  <span class="report-status-badge badge-draft" id="reportStatusBadge">Draft</span>
+                  <span class="report-id" id="reportIdDisplay">INS-00000000</span>
+                </div>
+                <div class="verdict-time" id="reportTimeDisplay">--</div>
+              </div>
+
+              <!-- Confidence -->
+              <div class="metric-row">
+                <div class="metric-header">
+                  <span class="metric-label">Confidence</span>
+                  <span class="metric-value" id="confidenceValue">0%</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-fill" id="confidenceBar" style="width: 0%;"></div>
+                </div>
+              </div>
+
+              <div class="section-divider"></div>
+
+              <!-- Interactive Declarations Review Editor -->
+              <div class="declarations-editor-container">
+                <div class="section-title-row">
+                  <span class="section-heading">Declarations review</span>
+                  <span class="section-hint">Click status to toggle or edit detected values</span>
+                </div>
+                <div class="declarations-editor-list" id="declarationsEditorList">
+                  <!-- Populated dynamically -->
+                </div>
+              </div>
+
+              <div class="section-divider"></div>
+
+              <!-- Cleaned Label Details & Raw OCR Toggle -->
+              <div class="ocr-group">
+                <div class="group-header">
+                  <span class="group-title">Label details</span>
+                </div>
+                <pre class="ocr-text-box" id="labelDetailsBox">No details available.</pre>
+                
+                <div class="raw-ocr-toggle-row">
+                  <button type="button" class="btn-toggle-raw" id="toggleRawOcrBtn">
+                    View raw OCR text
+                  </button>
+                </div>
+
+                <div class="raw-ocr-container hidden" id="rawOcrContainer">
+                  <span class="raw-ocr-label">Raw OCR output:</span>
+                  <pre class="raw-ocr-box" id="rawOcrTextBox">No text detected.</pre>
+                </div>
+              </div>
+
+              <!-- Results Actions -->
+              <div class="results-footer">
+                <div class="footer-actions-left">
+                  <button type="button" class="btn-primary btn-finalize-inline" id="btnFinalizeRight">
+                    Confirm & finalize
+                  </button>
+                  <button type="button" class="btn-secondary hidden" id="btnDownloadReportRight">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Download report (PDF)
+                  </button>
+                </div>
+                <button type="button" class="btn-text" id="btnViewHistory">View in history</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 2: History -->
+      <section class="view-panel hidden" id="viewHistory">
+        <div class="card history-card">
+          <div class="history-header">
+            <div>
+              <h2 class="card-title">Scan history</h2>
+              <p class="card-description">Finalized scans and verified compliance status.</p>
+            </div>
+
+            <!-- Month Filter & Monthly Summary Actions -->
+            <div class="history-toolbar">
+              <div class="filter-group">
+                <label for="monthFilter" class="filter-label">Month:</label>
+                <select id="monthFilter" class="select-input">
+                  <option value="">All months</option>
+                </select>
+              </div>
+
+              <button type="button" class="btn-secondary" id="btnMonthlySummary" title="Download monthly summary report PDF">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                  <line x1="16" y1="13" x2="8" y2="13"></line>
+                  <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+                Generate monthly summary
+              </button>
+
+              <button type="button" class="btn-secondary" id="btnRefreshHistory">
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="history-table" id="historyTable">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>File</th>
+                  <th>Report ID</th>
+                  <th>Confidence</th>
+                  <th>Status</th>
+                  <th>Review</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="historyTableBody">
+                <tr>
+                  <td colspan="7" class="table-empty">Loading history...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- VIEW 3: Senior Reviewing Officer Dashboard (SIH Stage 2) -->
+      <section class="view-panel hidden" id="viewOfficer">
+        <!-- Officer Authority Header -->
+        <div class="officer-authority-card card">
+          <div class="officer-authority-content">
+            <div class="officer-badge-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                <path d="m9 12 2 2 4-4"></path>
+              </svg>
+            </div>
+            <div class="officer-info">
+              <div class="officer-title-row">
+                <h2 class="officer-name">Dr. A. K. Sharma</h2>
+                <span class="officer-designation-badge">Assistant Controller (Legal Metrology)</span>
+                <span class="officer-jurisdiction-badge">Jurisdiction: Zone 4 (Central Dist.)</span>
+              </div>
+              <p class="officer-subtitle">Enforcement & Appellate Authority • Legal Metrology Act, 2009 & Packaged Commodities Rules, 2011</p>
+            </div>
+          </div>
+          <div class="officer-quick-actions">
+            <button type="button" class="btn-secondary" id="btnRefreshOfficerDashboard">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
+                <path d="M23 4v6h-6"></path>
+                <path d="M1 20v-6h6"></path>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+              Refresh queue
+            </button>
+          </div>
+        </div>
+
+        <!-- Officer KPI Metrics -->
+        <div class="officer-kpi-grid">
+          <div class="officer-kpi-card">
+            <div class="kpi-label">Pending batches</div>
+            <div class="kpi-number" id="kpiOfficerPendingBatches">0</div>
+            <div class="kpi-subtext">Awaiting regulatory review</div>
+          </div>
+          <div class="officer-kpi-card">
+            <div class="kpi-label">Specimens to adjudicate</div>
+            <div class="kpi-number" id="kpiOfficerPendingItems">0</div>
+            <div class="kpi-subtext">Individual packages in queue</div>
+          </div>
+          <div class="officer-kpi-card accent-approved">
+            <div class="kpi-label">Approved to ledger</div>
+            <div class="kpi-number" id="kpiOfficerApprovedItems">0</div>
+            <div class="kpi-subtext">Confirmed regulatory compliance</div>
+          </div>
+          <div class="officer-kpi-card accent-override">
+            <div class="kpi-label">Verdict overrides</div>
+            <div class="kpi-number" id="kpiOfficerOverriddenItems">0</div>
+            <div class="kpi-subtext">Symmetric officer decisions</div>
+          </div>
+        </div>
+
+        <!-- Jurisdictional Batch Inbox & Workbench -->
+        <div class="card officer-inbox-card" id="officerInboxCard">
+          <div class="card-header officer-inbox-header">
+            <div>
+              <h3 class="card-title">Jurisdictional inspection batch queue</h3>
+              <p class="card-description">Field inspection dossiers submitted by Legal Metrology Officers for adjudication.</p>
+            </div>
+            <div class="inbox-filter-group">
+              <label for="officerBatchStatusFilter" class="filter-label">Filter status:</label>
+              <select id="officerBatchStatusFilter" class="select-input">
+                <option value="all">All batches</option>
+                <option value="submitted" selected>Pending review</option>
+                <option value="in_review">In review</option>
+                <option value="completed">Completed / Approved</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <table class="officer-queue-table" id="officerQueueTable">
+              <thead>
+                <tr>
+                  <th>Batch ID</th>
+                  <th>Establishment / Location</th>
+                  <th>Field Inspector</th>
+                  <th>Submission date</th>
+                  <th>Specimens</th>
+                  <th>Field verdict</th>
+                  <th>Status</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="officerQueueTableBody">
+                <tr>
+                  <td colspan="8" class="table-empty">Loading jurisdictional review queue...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Active Batch Review Detail View (Hidden until user clicks "Review Dossier") -->
+        <div class="card officer-workbench-card hidden" id="officerWorkbenchCard">
+          <div class="workbench-header">
+            <div class="workbench-title-area">
+              <button type="button" class="btn-text" id="btnBackToOfficerInbox">
+                ← Back to queue
+              </button>
+              <div class="workbench-batch-meta">
+                <h3 class="workbench-batch-id" id="workbenchBatchId">BATCH-2026-XXXX</h3>
+                <span class="workbench-establishment" id="workbenchEstablishment">Supermart Sector 18</span>
+                <span class="status-pill" id="workbenchBatchStatusPill">In Review</span>
+              </div>
+            </div>
+            <div class="workbench-stats-summary" id="workbenchStatsSummary">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+
+          <!-- Items in this batch table -->
+          <div class="workbench-items-list" id="workbenchItemsList">
+            <!-- Dynamically populated item cards -->
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <span>LabelLens • Automated Compliance Verification & Inspector Review</span>
+    </footer>
+  </div>
+
+  <!-- Senior Officer Specimen Review Modal (Split View Workbench) -->
+  <div class="modal-overlay hidden" id="officerReviewModal">
+    <div class="modal-container officer-modal-container">
+      <!-- Modal Header -->
+      <div class="modal-header">
+        <div class="modal-header-info">
+          <span class="modal-pre-title">Legal Metrology Specimen Review • Section 15 / 36</span>
+          <h2 class="modal-title" id="modalCommodityTitle">Packaged Commodity Specimen</h2>
+          <div class="modal-meta-row">
+            <span class="meta-item" id="modalBatchRef">Batch: --</span>
+            <span class="meta-item" id="modalInspectorRef">Inspector: --</span>
+            <span class="meta-item" id="modalScanDateRef">Date: --</span>
+            <span class="status-pill" id="modalFieldVerdictPill">Preliminary: Checking</span>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" id="btnCloseOfficerModal">✕</button>
+      </div>
+
+      <!-- Modal Body (Split Layout: Evidence Photos + Regulatory Audit) -->
+      <div class="modal-body-split">
+        <!-- Left: Multi-Angle Photo Evidence Deck -->
+        <div class="modal-evidence-panel">
+          <div class="evidence-header">
+            <span class="panel-subtitle">Multi-angle specimen evidence</span>
+            <div class="angle-switch-tabs" id="modalAngleTabs">
+              <button type="button" class="angle-tab-btn active" data-angle="front">Front (PDP)</button>
+              <button type="button" class="angle-tab-btn" data-angle="back">Back (Info)</button>
+              <button type="button" class="angle-tab-btn" data-angle="side">Side</button>
+            </div>
+          </div>
+
+          <div class="evidence-image-viewport" id="modalImageViewport">
+            <img id="modalEvidenceImage" alt="Specimen angle evidence" />
+            <div class="image-blur-indicator" id="modalImageBlurBadge">Blur: Sharp</div>
+            <div class="image-zoom-hint">Hover or tap to inspect label detail</div>
+          </div>
+
+          <div class="evidence-meta-strip">
+            <div class="evidence-conf-box">
+              <span class="conf-lbl">AI OCR Confidence:</span>
+              <span class="conf-val" id="modalAiConfidenceVal">0%</span>
+            </div>
+            <div class="evidence-brand-box">
+              <span class="conf-lbl">Brand / Manufacturer:</span>
+              <span class="conf-val" id="modalBrandManufacturerVal">--</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Legal Metrology Regulatory Checklist & Findings -->
+        <div class="modal-audit-panel">
+          <div class="audit-tabs">
+            <button type="button" class="audit-tab-btn active" id="tabRule6Audit">Rule 6 Statutory checklist (10)</button>
+            <button type="button" class="audit-tab-btn" id="tabSpecialRegsAudit">Rule 9 & Special clauses</button>
+          </div>
+
+          <!-- Tab Content 1: Rule 6 Declarations -->
+          <div class="audit-tab-content" id="contentRule6Audit">
+            <div class="rule6-checklist-header">
+              <span>Statutory requirement</span>
+              <span>Detected declaration</span>
+              <span>Status</span>
+            </div>
+            <div class="rule6-items-container" id="modalRule6List">
+              <!-- Populated dynamically with all 10 declarations -->
+            </div>
+          </div>
+
+          <!-- Tab Content 2: Rule 9 & Special Clauses -->
+          <div class="audit-tab-content hidden" id="contentSpecialRegsAudit">
+            <div class="special-regs-box">
+              <h4 class="box-heading">Rule 9 (Minimum Font Height of Numerals)</h4>
+              <p class="box-desc">Font size must conform to Schedule II based on package area and net quantity.</p>
+              <div class="font-height-status" id="modalFontHeightStatus">
+                Compliant with minimum statutory font height standard.
+              </div>
+            </div>
+
+            <div class="special-regs-box" id="modalPanMasalaBox">
+              <h4 class="box-heading">Pan Masala / Tobacco Warning Mandate</h4>
+              <p class="box-desc">Rule 6(1)(g) & Cigarettes and Other Tobacco Products Act: Warning must occupy not less than 50% of PDP.</p>
+              <div class="special-reg-status" id="modalPanMasalaStatus">Not applicable for this commodity.</div>
+            </div>
+
+            <div class="special-regs-box">
+              <h4 class="box-heading">Section 36 Penalty Advisory (Legal Metrology Act, 2009)</h4>
+              <div class="penalty-calc-card">
+                <div class="penalty-row">
+                  <span>First Offence (General):</span>
+                  <strong>Up to ₹25,000 fine</strong>
+                </div>
+                <div class="penalty-row">
+                  <span>Second Offence:</span>
+                  <strong>Up to ₹50,000 fine</strong>
+                </div>
+                <div class="penalty-row">
+                  <span>Subsequent Offence:</span>
+                  <strong>₹50,000 to ₹1,00,000 or up to 1 year imprisonment</strong>
+                </div>
+                <div class="penalty-row penalty-highlight">
+                  <span>Net Qty Violation (Sec 36(2)):</span>
+                  <strong id="modalNetQtyPenalty">₹10,000 to ₹50,000 fine</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Officer Decision Justification Box -->
+          <div class="officer-decision-box">
+            <label for="officerRemarksInput" class="decision-label">
+              <span>Reviewing Officer Remarks / Legal Justification</span>
+              <span class="required-note" id="remarksRequiredNote">(Required for Overrides & Recapture)</span>
+            </label>
+            <textarea id="officerRemarksInput" class="remarks-textarea" placeholder="Enter judicial notes, reason for overriding field verdict, or specific instructions for inspector recapture..."></textarea>
+          </div>
+
+          <!-- 4 Symmetric Action Buttons -->
+          <div class="officer-actions-grid">
+            <!-- Action 1: Approve As-Is -->
+            <button type="button" class="btn-action-approve" id="btnOfficerApproveAsIs">
+              <div class="action-btn-title">✓ Approve As-Is</div>
+              <div class="action-btn-sub">Endorse findings & store to ledger</div>
+            </button>
+
+            <!-- Action 2: Override Verdict (Symmetric) -->
+            <button type="button" class="btn-action-override" id="btnOfficerOverride">
+              <div class="action-btn-title">⇄ Override Verdict</div>
+              <div class="action-btn-sub" id="btnOfficerOverrideSub">Flip to Compliant / Non-Compliant</div>
+            </button>
+
+            <!-- Action 3: Send Back for Recapture -->
+            <button type="button" class="btn-action-recapture" id="btnOfficerRecapture">
+              <div class="action-btn-title">↺ Send for Recapture</div>
+              <div class="action-btn-sub">Return to inspector with alert</div>
+            </button>
+
+            <!-- Action 4: Correct & Remark -->
+            <button type="button" class="btn-action-correct" id="btnOfficerCorrect">
+              <div class="action-btn-title">✎ Correct & Remark</div>
+              <div class="action-btn-sub">Adjust values, endorse & finalize</div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile Bottom Navigation (Visible on mobile/tablets < 768px) -->
+  <nav class="mobile-bottom-nav" id="mobileBottomNav">
+    <button type="button" class="mobile-nav-item active" id="mobNavInspector" data-target="viewInspector">
+      <div class="mob-icon">👮</div>
+      <span class="mob-label">Field</span>
+    </button>
+    <button type="button" class="mobile-nav-item" id="mobNavCapture" data-action="quickCapture">
+      <div class="mob-icon">📷</div>
+      <span class="mob-label">Capture</span>
+    </button>
+    <button type="button" class="mobile-nav-item" id="mobNavManifest" data-action="viewManifest">
+      <div class="mob-icon">📦</div>
+      <span class="mob-label">Manifest</span>
+    </button>
+    <button type="button" class="mobile-nav-item" id="mobNavOfficer" data-target="viewOfficer">
+      <div class="mob-icon">⚖️</div>
+      <span class="mob-label">Officer</span>
+    </button>
+    <button type="button" class="mobile-nav-item" id="mobNavLedger" data-target="viewHistory">
+      <div class="mob-icon">📋</div>
+      <span class="mob-label">Ledger</span>
+    </button>
+  </nav>
+
+  <script src="auth.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

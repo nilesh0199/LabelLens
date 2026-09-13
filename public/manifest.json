@@ -1,0 +1,10 @@
+﻿{
+  "name": "LabelLens - Legal Metrology Regulatory Enforcement",
+  "short_name": "LabelLens",
+  "description": "Two-Tier Regulatory Compliance System: Mobile Field Inspector & Senior Reviewing Officer Dashboard",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#FAF9F6",
+  "theme_color": "#1E1B4B",
+  "orientation": "portrait-primary"
+}

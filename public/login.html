@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#14163A">
+  <title>LabelLens - Choose Portal Role</title>
+
+  <!-- Favicon: Label + Lens Logo Mark (SVG Data URI) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36' fill='none'%3E%3Cpath d='M7 6C5.9 6 5 6.9 5 8V24C5 25.1 5.9 26 7 26H18L27 17V8C27 6.9 26.1 6 25 6H7Z' fill='%231D2050' stroke='%23C79A3E' stroke-width='2' stroke-linejoin='round'/%3E%3Ccircle cx='10' cy='11' r='2' fill='%23C79A3E'/%3E%3Cline x1='9' y1='16' x2='15' y2='16' stroke='%238E93BE' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='9' y1='20' x2='13' y2='20' stroke='%238E93BE' stroke-width='1.5' stroke-linecap='round'/%3E%3Ccircle cx='21' cy='20' r='6.5' fill='%23FCFBF7' stroke='%232B3380' stroke-width='2.5'/%3E%3Cpath d='M18.5 18C19 16.8 20.5 16.2 21.8 16.8' stroke='%238E93BE' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='25.5' y1='24.5' x2='31' y2='30' stroke='%232B3380' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+
+  <!-- Google Fonts: Fraunces (serif headings/wordmark) + IBM Plex Sans (body/UI) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-navy-dark: #14163A;
+      --bg-navy-mid: #1D2050;
+      --panel-paper: #FCFBF7;
+      --panel-border: #E8E4D9;
+      --text-dark: #14163A;
+      --text-muted: #565975;
+      --text-light-muted: #9EABCE;
+      --gold-primary: #B8892B;
+      --gold-accent: #C79A3E;
+      --gold-hover-bg: rgba(199, 154, 62, 0.08);
+      --indigo-primary: #2B3380;
+      --indigo-hover: #1F2666;
+      --font-serif: 'Fraunces', Georgia, serif;
+      --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background: linear-gradient(135deg, var(--bg-navy-dark) 0%, var(--bg-navy-mid) 100%);
+      color: var(--text-dark);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1.25rem;
+      overflow-x: hidden;
+    }
+
+    .landing-container {
+      width: 100%;
+      max-width: 760px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2rem;
+    }
+
+    /* Brand Header */
+    .brand-header {
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .brand-mark-box {
+      width: 54px;
+      height: 54px;
+      margin-bottom: 0.85rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
+    }
+
+    .brand-wordmark {
+      font-family: var(--font-serif);
+      font-size: 2.4rem;
+      font-weight: 700;
+      letter-spacing: -0.025em;
+      color: #FCFBF7;
+      line-height: 1.1;
+    }
+
+    .brand-tagline {
+      font-size: 0.95rem;
+      color: var(--text-light-muted);
+      margin-top: 0.4rem;
+      font-weight: 400;
+    }
+
+    .brand-authority {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--gold-accent);
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      margin-top: 0.75rem;
+    }
+
+    /* Single Split Paper Panel */
+    .role-panel {
+      background-color: var(--panel-paper);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      box-shadow: 0 24px 50px rgba(8, 10, 28, 0.4);
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+      overflow: hidden;
+    }
+
+    .role-half {
+      flex: 1;
+      padding: 2.5rem 2.25rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 1.75rem;
+    }
+
+    .panel-divider {
+      width: 1px;
+      background-color: var(--panel-border);
+      flex-shrink: 0;
+    }
+
+    .role-header-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .role-icon-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .role-inspector .role-icon-box {
+      background-color: #EDEFFC;
+      border: 1px solid #D6DAF5;
+      color: var(--indigo-primary);
+    }
+
+    .role-officer .role-icon-box {
+      background-color: #FDF9EE;
+      border: 1px solid #F5E8C7;
+      color: var(--gold-primary);
+    }
+
+    .role-title {
+      font-family: var(--font-serif);
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--text-dark);
+      letter-spacing: -0.015em;
+      line-height: 1.25;
+    }
+
+    .role-desc {
+      font-size: 0.88rem;
+      line-height: 1.5;
+      color: var(--text-muted);
+    }
+
+    .role-action-wrap {
+      width: 100%;
+    }
+
+    /* Landing Buttons */
+    .btn-role {
+      width: 100%;
+      min-height: 46px;
+      border-radius: 8px;
+      font-family: var(--font-sans);
+      font-size: 0.92rem;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-sizing: border-box;
+      padding: 0.65rem 1.25rem;
+      text-align: center;
+      border: none;
+    }
+
+    /* Inspector Action: Indigo Primary */
+    .btn-inspector {
+      background-color: var(--indigo-primary);
+      color: #FFFFFF;
+      border: 1px solid var(--indigo-primary);
+      box-shadow: 0 2px 6px rgba(43, 51, 128, 0.25);
+    }
+
+    .btn-inspector:hover {
+      background-color: var(--indigo-hover);
+      border-color: var(--indigo-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 10px rgba(43, 51, 128, 0.35);
+    }
+
+    /* Officer Action: Gold Outline */
+    .btn-officer {
+      background-color: transparent;
+      border: 1.5px solid var(--gold-accent);
+      color: var(--gold-primary);
+    }
+
+    .btn-officer:hover {
+      background-color: var(--gold-hover-bg);
+      border-color: var(--gold-primary);
+      color: #9A6F1E;
+      transform: translateY(-1px);
+    }
+
+    .btn-role:active {
+      transform: translateY(0);
+    }
+
+    /* Footer */
+    .landing-footer {
+      text-align: center;
+      font-size: 0.76rem;
+      color: rgba(255, 255, 255, 0.55);
+      line-height: 1.5;
+      max-width: 600px;
+    }
+
+    /* ==========================================================================
+       Sign In Modal
+       ========================================================================== */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 12, 35, 0.78);
+      backdrop-filter: blur(6px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.25rem 1rem;
+      z-index: 1000;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .modal-card {
+      background: var(--panel-paper);
+      border: 1px solid var(--panel-border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 410px;
+      padding: 1.75rem 1.6rem;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+      margin: auto;
+      position: relative;
+      box-sizing: border-box;
+      max-height: calc(100vh - 2.5rem);
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--panel-border);
+    }
+
+    .modal-title-group {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .modal-title {
+      font-family: var(--font-serif);
+      font-size: 1.35rem;
+      color: var(--text-dark);
+      font-weight: 700;
+      line-height: 1.1;
+    }
+
+    .modal-role-pill {
+      font-family: var(--font-sans);
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+    }
+
+    .modal-role-pill.pill-inspector {
+      background-color: #EDEFFC;
+      color: var(--indigo-primary);
+      border: 1px solid #D6DAF5;
+    }
+
+    .modal-role-pill.pill-officer {
+      background-color: #FDF9EE;
+      color: var(--gold-primary);
+      border: 1px solid #F5E8C7;
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
+      min-height: 44px;
+      font-size: 1.25rem;
+      cursor: pointer;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      transition: background-color 0.15s ease, color 0.15s ease;
+    }
+
+    .modal-close:hover {
+      background-color: #F0EDE4;
+      color: var(--text-dark);
+    }
+
+    /* Modal Inline Error Alert */
+    .modal-alert {
+      background-color: #FEF2F2;
+      border: 1px solid #FECACA;
+      color: #B91C1C;
+      padding: 0.7rem 0.85rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      line-height: 1.45;
+      margin-bottom: 1.15rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .modal-alert-icon {
+      flex-shrink: 0;
+      font-size: 1rem;
+      line-height: 1.2;
+    }
+
+    /* Modal Form Elements */
+    .modal-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1.05rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      text-align: left;
+    }
+
+    .form-label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-dark);
+    }
+
+    .form-input {
+      width: 100%;
+      min-height: 46px;
+      padding: 0.75rem 0.85rem;
+      font-family: var(--font-sans);
+      font-size: 16px; /* 16px ensures mobile browsers do not zoom */
+      border: 1.5px solid var(--panel-border);
+      border-radius: 8px;
+      outline: none;
+      background: #FFFFFF;
+      color: var(--text-dark);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      box-sizing: border-box;
+    }
+
+    .form-input:focus {
+      border-color: var(--indigo-primary);
+      box-shadow: 0 0 0 3px rgba(43, 51, 128, 0.12);
+    }
+
+    .btn-modal-submit {
+      width: 100%;
+      min-height: 48px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      border-radius: 8px;
+      margin-top: 0.35rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.15s ease;
+      border: none;
+      box-sizing: border-box;
+    }
+
+    .btn-modal-submit.theme-inspector {
+      background-color: var(--indigo-primary);
+      color: #FFFFFF;
+      box-shadow: 0 2px 8px rgba(43, 51, 128, 0.25);
+    }
+
+    .btn-modal-submit.theme-inspector:hover {
+      background-color: var(--indigo-hover);
+      box-shadow: 0 4px 12px rgba(43, 51, 128, 0.35);
+    }
+
+    .btn-modal-submit.theme-officer {
+      background-color: #212558;
+      color: #FFFFFF;
+      border: 1px solid var(--gold-accent);
+      box-shadow: 0 2px 8px rgba(33, 37, 88, 0.3);
+    }
+
+    .btn-modal-submit.theme-officer:hover {
+      background-color: #171A42;
+    }
+
+    .btn-modal-submit:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #FFFFFF;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Mobile Responsiveness (375px - 430px) */
+    @media (max-width: 640px) {
+      body {
+        padding: 1.5rem 1rem;
+        justify-content: flex-start;
+      }
+
+      .landing-container {
+        gap: 1.5rem;
+      }
+
+      .brand-wordmark {
+        font-size: 2.1rem;
+      }
+
+      .brand-tagline {
+        font-size: 0.88rem;
+      }
+
+      .role-panel {
+        flex-direction: column;
+      }
+
+      .panel-divider {
+        width: 100%;
+        height: 1px;
+      }
+
+      .role-half {
+        padding: 1.75rem 1.4rem;
+        gap: 1.25rem;
+      }
+
+      .role-title {
+        font-size: 1.25rem;
+      }
+
+      .btn-role {
+        min-height: 48px;
+        font-size: 0.95rem;
+      }
+
+      .modal-card {
+        padding: 1.5rem 1.25rem;
+        border-radius: 14px;
+      }
+
+      .modal-title {
+        font-size: 1.2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="landing-container">
+    
+    <!-- Brand Header -->
+    <header class="brand-header">
+      <!-- Label + Lens Logo Mark -->
+      <div class="brand-mark-box" aria-hidden="true">
+        <svg width="48" height="48" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Commodity label tag -->
+          <path d="M7 6C5.89543 6 5 6.89543 5 8V24C5 25.1046 5.89543 26 7 26H18L27 17V8C27 6.89543 26.1046 6 25 6H7Z" fill="#1D2050" stroke="#C79A3E" stroke-width="2" stroke-linejoin="round"/>
+          <circle cx="10" cy="11" r="2" fill="#C79A3E"/>
+          <line x1="9" y1="16" x2="15" y2="16" stroke="#8E93BE" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="9" y1="20" x2="13" y2="20" stroke="#8E93BE" stroke-width="1.5" stroke-linecap="round"/>
+          <!-- Magnifying inspection lens -->
+          <circle cx="21" cy="20" r="6.5" fill="#FCFBF7" stroke="#2B3380" stroke-width="2.5"/>
+          <path d="M18.5 18C19 16.8 20.5 16.2 21.8 16.8" stroke="#8E93BE" stroke-width="1.5" stroke-linecap="round"/>
+          <line x1="25.5" y1="24.5" x2="31" y2="30" stroke="#2B3380" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </div>
+
+      <h1 class="brand-wordmark">LabelLens</h1>
+      <p class="brand-tagline">Legal Metrology Regulatory Enforcement</p>
+      <span class="brand-authority">Govt. of India · Department of Consumer Affairs</span>
+    </header>
+
+    <!-- Single Split Paper Panel -->
+    <main class="role-panel" role="region" aria-label="Portal Role Selection">
+      
+      <!-- Left Half: Field Inspector -->
+      <section class="role-half role-inspector">
+        <div class="role-header-group">
+          <div class="role-icon-box" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+              <circle cx="12" cy="13" r="4"></circle>
+            </svg>
+          </div>
+          <h2 class="role-title">Field Inspector</h2>
+          <p class="role-desc">On-site retail verification, angle-guided camera capture, and Rule 6 compliance inspection.</p>
+        </div>
+        <div class="role-action-wrap">
+          <button type="button" class="btn-role btn-inspector" id="btnRoleInspector">Continue as Inspector</button>
+        </div>
+      </section>
+
+      <!-- Center Divider (vertical on desktop, horizontal on mobile) -->
+      <div class="panel-divider" role="separator"></div>
+
+      <!-- Right Half: Reviewing Officer -->
+      <section class="role-half role-officer">
+        <div class="role-header-group">
+          <div class="role-icon-box" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3v18"></path>
+              <path d="M5 8h14"></path>
+              <path d="M4 14l3-6 3 6a3 3 0 0 1-6 0z"></path>
+              <path d="M14 14l3-6 3 6a3 3 0 0 1-6 0z"></path>
+            </svg>
+          </div>
+          <h2 class="role-title">Reviewing Officer</h2>
+          <p class="role-desc">Jurisdictional batch review, statutory verdict adjudication, and enforcement advisory.</p>
+        </div>
+        <div class="role-action-wrap">
+          <button type="button" class="btn-role btn-officer" id="btnRoleOfficer">Continue as Officer</button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="landing-footer">
+      <div>Legal Metrology Act, 2009 &amp; Packaged Commodities Rules, 2011</div>
+    </footer>
+
+  </div>
+
+  <!-- Sign In Modal (Always requires manual credentials; never auto-logs in) -->
+  <div class="modal-backdrop hidden" id="signInModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <h3 class="modal-title" id="modalTitle">Sign In</h3>
+          <span class="modal-role-pill" id="modalRolePill">Inspector</span>
+        </div>
+        <button type="button" class="modal-close" id="btnCloseModal" aria-label="Close sign in dialog">✕</button>
+      </div>
+
+      <!-- Inline Error Alert -->
+      <div id="modalAlert" class="modal-alert hidden" role="alert">
+        <span class="modal-alert-icon">⚠️</span>
+        <span id="modalAlertMsg"></span>
+      </div>
+
+      <form id="signInForm" class="modal-form" novalidate>
+        <div class="form-group">
+          <label for="inputUsername" class="form-label">Username or Email</label>
+          <input 
+            type="text" 
+            id="inputUsername" 
+            class="form-input" 
+            placeholder="Enter username or email" 
+            required 
+            autocomplete="username" 
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="inputPassword" class="form-label">Password</label>
+          <input 
+            type="password" 
+            id="inputPassword" 
+            class="form-input" 
+            placeholder="••••••••" 
+            required 
+            autocomplete="current-password" 
+          />
+        </div>
+
+        <button type="submit" class="btn-modal-submit" id="btnSubmitAuth">
+          <span id="btnSubmitAuthText">Authenticate</span>
+          <span id="authSpinner" class="spinner hidden" aria-hidden="true"></span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script src="auth.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Clear any prior cached session on landing screen to prevent stale auto-auth
+      LabelLensAuth.clearAuthSession();
+
+      const btnRoleInspector = document.getElementById('btnRoleInspector');
+      const btnRoleOfficer = document.getElementById('btnRoleOfficer');
+      const signInModal = document.getElementById('signInModal');
+      const btnCloseModal = document.getElementById('btnCloseModal');
+      const modalRolePill = document.getElementById('modalRolePill');
+      const modalAlert = document.getElementById('modalAlert');
+      const modalAlertMsg = document.getElementById('modalAlertMsg');
+      const signInForm = document.getElementById('signInForm');
+      const inputUsername = document.getElementById('inputUsername');
+      const inputPassword = document.getElementById('inputPassword');
+      const btnSubmitAuth = document.getElementById('btnSubmitAuth');
+      const btnSubmitAuthText = document.getElementById('btnSubmitAuthText');
+      const authSpinner = document.getElementById('authSpinner');
+
+      // Tracks the intended role context clicked by the user ('inspector' or 'officer')
+      let selectedRoleContext = null;
+
+      function showError(msg) {
+        modalAlertMsg.textContent = msg;
+        modalAlert.classList.remove('hidden');
+      }
+
+      function hideError() {
+        modalAlert.classList.add('hidden');
+        modalAlertMsg.textContent = '';
+      }
+
+      function setSubmitting(isSubmitting) {
+        btnSubmitAuth.disabled = isSubmitting;
+        if (isSubmitting) {
+          btnSubmitAuthText.textContent = 'Verifying credentials...';
+          authSpinner.classList.remove('hidden');
+        } else {
+          btnSubmitAuthText.textContent = 'Authenticate';
+          authSpinner.classList.add('hidden');
+        }
+      }
+
+      // Open Modal strictly for the selected role; NEVER auto-authenticates
+      function openSignInModal(role) {
+        selectedRoleContext = role;
+
+        // 1. Always reset inputs - no cached values, no default text
+        inputUsername.value = '';
+        inputPassword.value = '';
+        hideError();
+        setSubmitting(false);
+
+        // 2. Set role pill & button styling according to role context
+        if (role === 'inspector') {
+          modalRolePill.textContent = 'Field Inspector';
+          modalRolePill.className = 'modal-role-pill pill-inspector';
+          btnSubmitAuth.className = 'btn-modal-submit theme-inspector';
+        } else {
+          modalRolePill.textContent = 'Reviewing Officer';
+          modalRolePill.className = 'modal-role-pill pill-officer';
+          btnSubmitAuth.className = 'btn-modal-submit theme-officer';
+        }
+
+        // 3. Display modal
+        signInModal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => inputUsername.focus(), 60);
+      }
+
+      function closeSignInModal() {
+        signInModal.classList.add('hidden');
+        document.body.style.overflow = '';
+        selectedRoleContext = null;
+        inputUsername.value = '';
+        inputPassword.value = '';
+        hideError();
+        setSubmitting(false);
+      }
+
+      // Button click ONLY opens the modal; NO auto-authentication
+      btnRoleInspector.addEventListener('click', (e) => {
+        e.preventDefault();
+        openSignInModal('inspector');
+      });
+
+      btnRoleOfficer.addEventListener('click', (e) => {
+        e.preventDefault();
+        openSignInModal('officer');
+      });
+
+      // Close handlers
+      btnCloseModal.addEventListener('click', closeSignInModal);
+      signInModal.addEventListener('click', (e) => {
+        if (e.target === signInModal) closeSignInModal();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !signInModal.classList.contains('hidden')) {
+          closeSignInModal();
+        }
+      });
+
+      // Form submission: authenticates against user records & validates role match
+      signInForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        hideError();
+
+        const username = inputUsername.value.trim();
+        const password = inputPassword.value;
+
+        if (!username) {
+          showError('Please enter your username or email.');
+          inputUsername.focus();
+          return;
+        }
+
+        if (!password) {
+          showError('Please enter your password.');
+          inputPassword.focus();
+          return;
+        }
+
+        if (!selectedRoleContext) {
+          showError('No role context selected. Please close and re-select a role.');
+          return;
+        }
+
+        setSubmitting(true);
+
+        try {
+          // Send authentication request
+          const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username, password })
+          });
+
+          const data = await res.json().catch(() => ({}));
+
+          if (!res.ok) {
+            throw new Error(data.detail || 'Authentication failed. Please check your username and password.');
+          }
+
+          // Enforce role match: prevent accessing wrong dashboard with valid credentials of other role
+          if (!data.user || data.user.role !== selectedRoleContext) {
+            const returnedRole = (data.user && data.user.role) ? data.user.role : 'unassigned';
+            throw new Error(`Access Denied: This account has role [${returnedRole}], but you are signing in as [${selectedRoleContext}]. Please sign in under the correct role.`);
+          }
+
+          // Credentials and role confirmed: store session and route to dashboard
+          LabelLensAuth.setAuthSession(data.token, data.user);
+          window.location.href = selectedRoleContext === 'inspector' ? '/inspector' : '/officer';
+
+        } catch (err) {
+          showError(err.message);
+          setSubmitting(false);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
