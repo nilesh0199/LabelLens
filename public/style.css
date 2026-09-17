@@ -2012,14 +2012,27 @@ body {
 
 .workbench-item-card.item-reviewed-approved {
   border-left: 4px solid #16A34A;
+  background: #FBFDFB;
 }
 
 .workbench-item-card.item-reviewed-overridden {
   border-left: 4px solid #6366F1;
+  background: #FAF8FE;
 }
 
 .workbench-item-card.item-reviewed-recapture {
   border-left: 4px solid #EA580C;
+  background: #FFFBF7;
+}
+
+.workbench-item-card.item-reviewed-corrected {
+  border-left: 4px solid #2563EB;
+  background: #F8FAFF;
+}
+
+.workbench-item-card.item-reviewed-recaptured-resolved {
+  border-left: 4px solid #D97706;
+  background: #FFFDF5;
 }
 
 .item-card-left {
@@ -6855,5 +6868,441 @@ body {
   }
 }
 
+/* ==========================================================================
+   Recapture Section & Photo Replace Modal Mobile Responsive (375px–430px)
+   ========================================================================== */
+.recapture-section-card {
+  width: 100%;
+  box-sizing: border-box;
+}
 
+.recapture-item-row-card {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 480px) {
+  .recapture-header-flex {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+  .recapture-header-actions {
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+  .btn-resubmit-selected {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+  .recapture-item-row-card .btn-recapture-action,
+  .recapture-item-row-card .btn-replace-action,
+  .recapture-item-row-card .btn-send-single {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+}
+
+/* ==========================================================================
+   Senior Reviewing Officer Desktop App Layout & 5-View System
+   ========================================================================== */
+.officer-desktop-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #F8FAFC;
+  color: #1E293B;
+  font-family: var(--font-body, 'IBM Plex Sans', sans-serif);
+}
+
+.officer-header {
+  height: 64px;
+  background: #14163A;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.officer-header .brand-name {
+  font-family: var(--font-serif, 'Fraunces', Georgia, serif);
+  color: #FFFFFF;
+  font-size: 1.15rem;
+}
+
+.officer-header .brand-sub {
+  color: #C79A3E;
+  font-size: 0.72rem;
+  font-weight: 500;
+  display: block;
+}
+
+.officer-app-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: calc(100vh - 64px);
+  width: 100%;
+}
+
+.officer-sidebar {
+  background: #14163A;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1.25rem 1rem;
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 64px;
+  height: calc(100vh - 64px);
+  box-sizing: border-box;
+}
+
+.sidebar-officer-meta {
+  padding: 0.65rem 0.75rem;
+  margin-bottom: 1.25rem;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.officer-meta-badge {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #C79A3E;
+  font-weight: 700;
+}
+
+.officer-meta-jurisdiction {
+  font-size: 0.8rem;
+  color: #E2E8F0;
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: 8px;
+  background: transparent;
+  border: none;
+  color: #94A3B8;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.sidebar-nav-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #F8FAFC;
+}
+
+.sidebar-nav-item.active {
+  background: #1E1B4B;
+  color: #FFFFFF;
+  font-weight: 600;
+  border-left: 3px solid #C79A3E;
+}
+
+.sidebar-badge {
+  margin-left: auto;
+  background: #C79A3E;
+  color: #14163A;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+.officer-main-content {
+  flex: 1;
+  min-width: 0;
+  padding: 1.75rem 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.officer-view-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.officer-view-pane.hidden {
+  display: none !important;
+}
+
+/* Needs Attention Priority Strip */
+.needs-attention-card {
+  background: #FFFBEB;
+  border: 1.5px solid #FDE68A;
+  border-left: 5px solid #F59E0B;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+}
+
+.needs-attention-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.needs-attention-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #92400E;
+  background: #FEF3C7;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+}
+
+.needs-attention-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.needs-attention-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #FFFFFF;
+  border: 1px solid #FDE68A;
+  border-radius: 8px;
+  padding: 0.85rem 1.15rem;
+  transition: box-shadow 0.15s ease;
+}
+
+.needs-attention-item:hover {
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.12);
+}
+
+.needs-attention-item-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.needs-attention-item-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Section Header */
+.officer-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.officer-section-title {
+  font-family: var(--font-serif, 'Fraunces', Georgia, serif);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #14163A;
+  margin: 0;
+}
+
+.officer-section-desc {
+  font-size: 0.85rem;
+  color: #64748B;
+  margin-top: 0.25rem;
+}
+
+/* Ledger Controls & Bulk Bar */
+.ledger-controls-bar {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 0.85rem 1.15rem;
+}
+
+.ledger-search-input {
+  flex: 1;
+  min-width: 240px;
+  padding: 0.5rem 0.85rem;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #1E293B;
+  outline: none;
+}
+
+.ledger-search-input:focus {
+  border-color: #14163A;
+}
+
+.ledger-bulk-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #EEF2FF;
+  border: 1.5px solid #C7D2FE;
+  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+}
+
+/* Reports Filter Bar */
+.reports-filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  background: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 10px;
+  padding: 0.85rem 1.25rem;
+}
+
+.btn-range-preset.active {
+  background: #14163A !important;
+  color: #FFFFFF !important;
+  border-color: #14163A !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 900px) {
+  .officer-app-layout {
+    grid-template-columns: 1fr;
+  }
+  .officer-sidebar {
+    position: static;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .sidebar-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+  }
+  .sidebar-nav-item {
+    width: auto;
+    white-space: nowrap;
+  }
+  .officer-main-content {
+    padding: 1rem;
+  }
+}
+
+/* ==========================================================================
+   Scoped Officer Review Modal Declaration Editor & Save Bar
+   ========================================================================== */
+#officerReviewModal .officer-edit-save-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  margin-bottom: 0.75rem;
+}
+
+#officerReviewModal .decl-editor-card {
+  border: 1px solid #E2E8F0;
+  border-radius: 8px;
+  background: #FFFFFF;
+  padding: 0.65rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  transition: all 0.15s ease;
+}
+
+#officerReviewModal .decl-editor-card.is-present {
+  border-left: 3.5px solid #16A34A;
+  background: #F0FDF4;
+}
+
+#officerReviewModal .decl-editor-card.is-absent {
+  border-left: 3.5px solid #DC2626;
+  background: #FEF2F2;
+}
+
+#officerReviewModal .decl-toggle-pill-group {
+  display: inline-flex;
+  border: 1px solid #CBD5E1;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: #F1F5F9;
+}
+
+#officerReviewModal .btn-decl-toggle {
+  min-height: 28px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: #64748B;
+  transition: all 0.15s ease;
+}
+
+#officerReviewModal .btn-decl-toggle.active-present {
+  background: #16A34A;
+  color: #FFFFFF;
+  font-weight: 700;
+}
+
+#officerReviewModal .btn-decl-toggle.active-absent {
+  background: #DC2626;
+  color: #FFFFFF;
+  font-weight: 700;
+}
+
+#officerReviewModal .decl-field-input {
+  width: 100%;
+  font-size: 0.82rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  font-family: inherit;
+  box-sizing: border-box;
+  background: #FFFFFF;
+}
+
+#officerReviewModal .decl-field-input:focus {
+  outline: none;
+  border-color: #14163A;
+  box-shadow: 0 0 0 2px rgba(20, 22, 58, 0.1);
+}
+
+#officerReviewModal .decl-field-input:disabled {
+  background: #F1F5F9;
+  color: #94A3B8;
+  cursor: not-allowed;
+  border-color: #E2E8F0;
+}
 

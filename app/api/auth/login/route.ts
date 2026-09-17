@@ -21,6 +21,14 @@ const DEMO_USERS: Record<string, any> = {
     badge_number: 'AD-CTRL-DL-02',
     jurisdiction: 'Controller Office Delhi',
   },
+  officer2: {
+    username: 'officer2',
+    password: 'password123',
+    role: 'officer',
+    full_name: 'Smt. Anita Desai',
+    badge_number: 'AD-CTRL-MH-01',
+    jurisdiction: 'Controller Office Mumbai',
+  },
   admin: {
     username: 'admin',
     password: 'admin123',

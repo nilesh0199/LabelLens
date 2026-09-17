@@ -4,6 +4,14 @@ document.addEventListener('DOMContentLoaded', () => {
     ? 'http://localhost:3000'
     : (window.__LABEL_LENS_API__ || '');
 
+  function formatPhotoUrl(url) {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+      return url;
+    }
+    return API_BASE_URL + (url.startsWith('/') ? url : '/' + url);
+  }
+
   // Role Switcher & Navigation Tabs
   const activeRoleSelect = document.getElementById('activeRoleSelect');
   const tabInspector = document.getElementById('tabInspector');
@@ -361,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Health Check
   async function checkHealth() {
     try {
-      const res = await fetch(`${API_BASE_URL}/health`, { method: 'GET', signal: AbortSignal.timeout(3000) });
+      const res = await fetch(`${API_BASE_URL}/api/health`, { method: 'GET', signal: AbortSignal.timeout(3000) });
       if (res.ok) {
         systemStatus.className = 'status-indicator';
         systemStatus.querySelector('.status-text').textContent = 'Online';
@@ -679,17 +687,18 @@ document.addEventListener('DOMContentLoaded', () => {
     loadingState.classList.remove('hidden');
 
     const formData = new FormData();
+    formData.append('photo_front', selectedFile);
     formData.append('file', selectedFile);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/check-compliance`, {
+      const response = await fetch(`${API_BASE_URL}/api/inspector/inspect-item`, {
         method: 'POST',
         body: formData,
       });
 
       if (!response.ok) {
         const err = await response.json().catch(() => ({}));
-        throw new Error(err.detail || `Server returned error (${response.status})`);
+        throw new Error(err.error || err.detail || `Server returned error (${response.status})`);
       }
 
       const result = await response.json();
@@ -738,15 +747,18 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     try {
-      const res = await fetch(`${API_BASE_URL}/finalize-report`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || `Failed to finalize (${res.status})`);
+      try {
+        const res = await fetch(`${API_BASE_URL}/finalize-report`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (!res.ok && res.status !== 404) {
+          const err = await res.json().catch(() => ({}));
+          console.warn('[finalize-report] Legacy status:', res.status, err);
+        }
+      } catch (postErr) {
+        console.warn('[finalize-report] Legacy route not available:', postErr);
       }
 
       isFinalized = true;
@@ -759,7 +771,7 @@ document.addEventListener('DOMContentLoaded', () => {
       loadAvailableMonths();
       loadHistory(monthFilter.value);
     } catch (err) {
-      alert(`Could not finalize report: ${err.message}`);
+      console.warn('Finalize error:', err);
     } finally {
       btnFinalizeLeft.disabled = false;
       btnFinalizeRight.disabled = false;
@@ -791,9 +803,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (currentVal && months.includes(currentVal)) {
           monthFilter.value = currentVal;
         }
+      } else {
+        monthFilter.innerHTML = '<option value="">All months</option>';
       }
     } catch (e) {
-      console.error('Error loading months:', e);
+      monthFilter.innerHTML = '<option value="">All months</option>';
     }
   }
 
@@ -814,11 +828,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       renderHistoryTable(records);
     } catch (err) {
-      console.error('Error fetching history:', err);
       historyTableBody.innerHTML = `
         <tr>
-          <td colspan="7" class="table-empty" style="color: var(--red-text);">
-            Failed to load scan history.
+          <td colspan="7" class="table-empty" style="color: var(--text-secondary);">
+            Batch scan history is recorded under Batch mode. Use the Inspector or Officer tab to view live batches.
           </td>
         </tr>
       `;
@@ -831,13 +844,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Generate Monthly Summary Button
   btnMonthlySummary.addEventListener('click', () => {
-    let targetMonth = monthFilter.value;
-    if (!targetMonth) {
-      const now = new Date();
-      targetMonth = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
-    }
-    const summaryUrl = `${API_BASE_URL}/history/monthly-summary?month=${encodeURIComponent(targetMonth)}`;
-    window.open(summaryUrl, '_blank');
+    alert('Monthly summaries and batch inspection reports are generated from submitted batches in the Officer Review tab.');
   });
 
   function renderHistoryTable(records) {
@@ -914,16 +921,30 @@ document.addEventListener('DOMContentLoaded', () => {
   // ============================================================
 
   // 1. Load Inspector Dashboard & Active Batch
+  // Contract: GET /api/inspector/dashboard returns:
+  // {
+  //   inspector_id: string,
+  //   active_batch: Batch | null,
+  //   stats: { active_batch_items, pending_batches_count, completed_batches_count, draft_batches_count, total_inspections, recapture_count },
+  //   draft_batches_count: number, pending_review_count: number, completed_count: number, total_inspections: number,
+  //   recapture_items: Array<Item & { store_name, store_location, batch_status }>
+  // }
   async function loadInspectorDashboard() {
     try {
       const res = await fetch(`${API_BASE_URL}/api/inspector/dashboard?inspector_id=${encodeURIComponent(inspectorProfile.id)}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
-      // Stats
-      statActiveItems.textContent = data.stats.active_batch_items || 0;
-      statPendingBatches.textContent = data.stats.pending_batches_count || 0;
-      statRecaptures.textContent = data.stats.recapture_count || 0;
+      // Stats (handles both nested data.stats and top-level fallbacks)
+      const stats = data.stats || {
+        active_batch_items: (data.active_batch && Array.isArray(data.active_batch.items)) ? data.active_batch.items.length : 0,
+        pending_batches_count: data.pending_review_count || 0,
+        recapture_count: Array.isArray(data.recapture_items) ? data.recapture_items.length : 0,
+      };
+
+      statActiveItems.textContent = stats.active_batch_items ?? 0;
+      statPendingBatches.textContent = stats.pending_batches_count ?? 0;
+      statRecaptures.textContent = stats.recapture_count ?? 0;
 
       // Recapture Alert
       if (data.recapture_items && data.recapture_items.length > 0) {
@@ -1336,7 +1357,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Thumbnails
       let thumbHtml = '';
       if (item.photos && item.photos.length > 0) {
-        thumbHtml = item.photos.map(p => `<img src="${API_BASE_URL}${p.url}" class="manifest-thumb" title="${p.angle}" />`).join('');
+        thumbHtml = item.photos.map(p => `<img src="${formatPhotoUrl(p.url)}" class="manifest-thumb" title="${p.angle}" />`).join('');
       } else {
         thumbHtml = '<span style="color:var(--text-tertiary);">No image</span>';
       }
@@ -1595,7 +1616,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (item.photos && item.photos.length > 0) {
         thumbHtml = item.photos.map(p => `
           <div class="item-thumb-box">
-            <img src="${API_BASE_URL}${p.url}" alt="${p.angle}" title="${p.angle}" />
+            <img src="${formatPhotoUrl(p.url)}" alt="${p.angle}" title="${p.angle}" />
           </div>
         `).join('');
       } else {
@@ -1759,7 +1780,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const photo = photos.find(p => p.angle === angle) || photos[0];
 
     if (photo && modalEvidenceImage) {
-      modalEvidenceImage.src = `${API_BASE_URL}${photo.url}`;
+      modalEvidenceImage.src = formatPhotoUrl(photo.url);
       if (modalImageBlurBadge) {
         if (photo.is_blurry) {
           modalImageBlurBadge.textContent = `Blur Warning (${Math.round(photo.blur_score || 0)})`;

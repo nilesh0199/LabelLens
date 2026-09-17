@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { dataStore } from '@/lib/supabase';
+import { dataStore, validatePhotoProvenance } from '@/lib/supabase';
 import { checkNeedsReview } from '@/lib/compliance';
 
 export const runtime = 'nodejs';
@@ -23,6 +23,20 @@ export async function POST(req: NextRequest) {
       cleaned_summary = '',
       status = 'draft',
     } = body;
+
+    if (photos !== undefined) {
+      if (!Array.isArray(photos)) {
+        return NextResponse.json(
+          { error: 'Invalid photo URL: must originate from specimen-photos storage' },
+          { status: 400 }
+        );
+      }
+      try {
+        validatePhotoProvenance(photos);
+      } catch (validationErr: any) {
+        return NextResponse.json({ error: validationErr.message }, { status: 400 });
+      }
+    }
 
     let needs_review = body.needs_review;
     let review_reasons = body.review_reasons;
@@ -61,6 +75,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(item);
   } catch (err: any) {
+    if (err.message?.includes('Invalid photo URL')) {
+      return NextResponse.json({ error: err.message }, { status: 400 });
+    }
     console.error('[add-item] Error:', err);
     return NextResponse.json({ error: err.message || 'Failed to add item' }, { status: 500 });
   }

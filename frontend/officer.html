@@ -1,171 +1,509 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#1E1B4B">
+  <meta name="theme-color" content="#14163A">
   <title>LabelLens - Senior Reviewing Officer Command Center</title>
+
+  <!-- Favicon: Label + Lens Logo Mark -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 36' fill='none'%3E%3Cpath d='M7 6C5.9 6 5 6.9 5 8V24C5 25.1 5.9 26 7 26H18L27 17V8C27 6.9 26.1 6 25 6H7Z' fill='%231D2050' stroke='%23C79A3E' stroke-width='2' stroke-linejoin='round'/%3E%3Ccircle cx='10' cy='11' r='2' fill='%23C79A3E'/%3E%3Cline x1='9' y1='16' x2='15' y2='16' stroke='%238E93BE' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='9' y1='20' x2='13' y2='20' stroke='%238E93BE' stroke-width='1.5' stroke-linecap='round'/%3E%3Ccircle cx='21' cy='20' r='6.5' fill='%23FCFBF7' stroke='%232B3380' stroke-width='2.5'/%3E%3Cpath d='M18.5 18C19 16.8 20.5 16.2 21.8 16.8' stroke='%238E93BE' stroke-width='1.5' stroke-linecap='round'/%3E%3Cline x1='25.5' y1='24.5' x2='31' y2='30' stroke='%232B3380' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E">
+
+  <!-- Google Fonts: Fraunces (Headings/Branding) + IBM Plex Sans (Body/UI) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400&family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="officer-portal-body">
-  <div class="app-container">
-    <!-- Header -->
-    <header class="app-header">
-      <div class="brand">
-        <div class="brand-logo">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-            <path d="m9 12 2 2 4-4"></path>
-          </svg>
-        </div>
-        <div class="brand-text">
-          <span class="brand-name">LabelLens</span>
-          <span class="brand-sub">Adjudication Command Center</span>
+<body class="officer-portal-body officer-desktop-shell">
+
+  <!-- Persistent Top Header -->
+  <header class="app-header officer-header">
+    <div class="brand">
+      <div class="brand-logo-mark" aria-hidden="true">
+        <svg width="30" height="30" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M7 6C5.89543 6 5 6.89543 5 8V24C5 25.1046 5.89543 26 7 26H18L27 17V8C27 6.89543 26.1046 6 25 6H7Z" fill="#1D2050" stroke="#C79A3E" stroke-width="2" stroke-linejoin="round"/>
+          <circle cx="10" cy="11" r="2" fill="#C79A3E"/>
+          <circle cx="21" cy="20" r="6.5" fill="#FCFBF7" stroke="#2B3380" stroke-width="2.5"/>
+          <line x1="25.5" y1="24.5" x2="31" y2="30" stroke="#2B3380" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="brand-text">
+        <span class="brand-name">LabelLens</span>
+        <span class="brand-sub">Review Portal • Directorate of Legal Metrology</span>
+      </div>
+    </div>
+
+    <div class="header-right-user">
+      <div class="user-profile-badge">
+        <span class="user-role-dot" style="background: #C79A3E;"></span>
+        <div class="user-profile-text">
+          <strong id="headerOfficerName">Dr. S. K. Sharma</strong>
+          <small id="headerOfficerBadge">AD-CTRL-DL-02 • Controller Office Delhi</small>
         </div>
       </div>
+      <button type="button" class="btn-secondary btn-signout" id="btnSignOut">
+        Sign Out
+      </button>
+    </div>
+  </header>
 
-      <div class="header-right-user">
-        <div class="user-profile-badge">
-          <span class="user-role-dot" style="background: #FCD34D;"></span>
-          <div class="user-profile-text">
-            <strong id="headerOfficerName">Dr. A. K. Sharma</strong>
-            <small id="headerOfficerBadge">Assistant Controller • Zone 4</small>
-          </div>
-        </div>
-        <button type="button" class="btn-secondary btn-signout" id="btnSignOut">
-          Sign Out
+  <!-- Desktop App Container: Persistent Left Sidebar + Main Content -->
+  <div class="officer-app-layout">
+    
+    <!-- Persistent Left Sidebar -->
+    <aside class="officer-sidebar" role="navigation" aria-label="Officer Workspace Navigation">
+      <div class="sidebar-officer-meta">
+        <div class="officer-meta-badge">Reviewing Officer</div>
+        <div class="officer-meta-jurisdiction" id="sidebarJurisdiction">Controller Office Delhi</div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button type="button" class="sidebar-nav-item active" data-view="dashboard" id="navItemDashboard">
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+          <span>Dashboard</span>
         </button>
-      </div>
-    </header>
 
-    <!-- Main Views -->
-    <main class="app-main">
-      <!-- Officer Authority Header -->
-      <div class="officer-authority-card card">
-        <div class="officer-authority-content">
-          <div class="officer-badge-icon">
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-              <path d="m9 12 2 2 4-4"></path>
-            </svg>
-          </div>
-          <div class="officer-info">
-            <div class="officer-title-row">
-              <h2 class="officer-name" id="mainOfficerName">Dr. A. K. Sharma</h2>
-              <span class="officer-designation-badge">Assistant Controller (Legal Metrology)</span>
-              <span class="officer-jurisdiction-badge" id="mainOfficerJurisdiction">Jurisdiction: Zone 4 (Central Dist.)</span>
+        <button type="button" class="sidebar-nav-item" data-view="queue" id="navItemQueue">
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect><path d="m9 14 2 2 4-4"></path></svg>
+          <span>Review Queue</span>
+          <span class="sidebar-badge" id="navQueueBadge">0</span>
+        </button>
+
+        <button type="button" class="sidebar-nav-item" data-view="inspectors" id="navItemInspectors">
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          <span>Inspectors</span>
+        </button>
+
+        <button type="button" class="sidebar-nav-item" data-view="ledger" id="navItemLedger">
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+          <span>Ledger</span>
+        </button>
+
+        <button type="button" class="sidebar-nav-item" data-view="reports" id="navItemReports">
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <span>Reports</span>
+        </button>
+      </nav>
+
+      <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.08); font-size: 0.7rem; color: #64748B;">
+        <span>Legal Metrology Act, 2009</span><br>
+        <span>PCR Enforcement v2.0</span>
+      </div>
+    </aside>
+
+    <!-- Main Content Workspace: Section-by-Section Views -->
+    <main class="officer-main-content">
+
+      <!-- ====================================================================
+           VIEW 1: DASHBOARD
+           ==================================================================== -->
+      <section class="officer-view-pane" id="viewDashboard">
+        <!-- Officer Authority Header -->
+        <div class="officer-authority-card card">
+          <div class="officer-authority-content">
+            <div class="officer-badge-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                <path d="m9 12 2 2 4-4"></path>
+              </svg>
             </div>
-            <p class="officer-subtitle">Enforcement & Appellate Authority • Legal Metrology Act, 2009 & Packaged Commodities Rules, 2011</p>
+            <div class="officer-info">
+              <div class="officer-title-row">
+                <h2 class="officer-name" id="mainOfficerName">Dr. S. K. Sharma</h2>
+                <span class="officer-designation-badge">Assistant Controller (Legal Metrology)</span>
+                <span class="officer-jurisdiction-badge" id="mainOfficerJurisdiction">Jurisdiction: Controller Office Delhi</span>
+              </div>
+              <p class="officer-subtitle">Legal Metrology Verification &amp; Review</p>
+            </div>
+          </div>
+          <div class="officer-quick-actions">
+            <button type="button" class="btn-secondary" id="btnRefreshOfficerDashboard">
+              Refresh Data ↻
+            </button>
           </div>
         </div>
-        <div class="officer-quick-actions">
-          <button type="button" class="btn-secondary" id="btnRefreshOfficerDashboard">
-            Refresh Queue
+
+        <!-- Officer 4 KPI Cards (Desktop Horizontal Row) -->
+        <div class="officer-kpi-grid">
+          <div class="officer-kpi-card">
+            <div class="kpi-label">Pending Batches</div>
+            <div class="kpi-number" id="kpiOfficerPendingBatches">0</div>
+            <div class="kpi-subtext">Awaiting officer review</div>
+          </div>
+          <div class="officer-kpi-card">
+            <div class="kpi-label">Items to Review</div>
+            <div class="kpi-number" id="kpiOfficerPendingItems">0</div>
+            <div class="kpi-subtext">Packages in review queue</div>
+          </div>
+          <div class="officer-kpi-card accent-approved">
+            <div class="kpi-label">Approved to Ledger</div>
+            <div class="kpi-number" id="kpiOfficerApprovedItems">0</div>
+            <div class="kpi-subtext">Confirmed statutory compliance</div>
+          </div>
+          <div class="officer-kpi-card accent-override">
+            <div class="kpi-label">Verdict Overrides</div>
+            <div class="kpi-number" id="kpiOfficerOverriddenItems">0</div>
+            <div class="kpi-subtext">Officer verdict adjustments</div>
+          </div>
+        </div>
+
+        <!-- "Needs Attention" Prioritized Flagged Items Strip -->
+        <div class="needs-attention-card" id="needsAttentionCard">
+          <div class="needs-attention-header">
+            <div>
+              <span class="needs-attention-badge">⚡ Items Needing Review</span>
+              <h3 style="font-family: var(--font-serif); font-size: 1.15rem; color: #92400E; margin-top: 0.35rem;">
+                Items Requiring Review or Correction
+              </h3>
+              <p style="font-size: 0.8rem; color: #78350F; margin-top: 0.15rem;">
+                Flagged non-compliant items and low-confidence scans across your assigned inspectors.
+              </p>
+            </div>
+            <span style="font-size: 0.78rem; font-weight: 700; color: #B45309;" id="needsAttentionCountBadge">0 Flagged</span>
+          </div>
+
+          <div class="needs-attention-list" id="needsAttentionList">
+            <div style="padding: 1rem; color: #92400E; font-size: 0.85rem;">Checking priority inspection items...</div>
+          </div>
+        </div>
+
+        <!-- Recent Incoming Batches Card -->
+        <div class="card" id="recentBatchesCard" style="margin-top: 1.5rem; background: #FFFFFF; border-radius: 12px; border: 1px solid #E2E8F0; overflow: hidden;">
+          <div style="padding: 1.1rem 1.4rem; background: #F8FAFC; border-bottom: 1px solid #E2E8F0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+            <div>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <span class="needs-attention-badge" style="background: #EFF6FF; color: #1D4ED8; border-color: #BFDBFE;">📥 Recent Submissions</span>
+                <h3 style="font-family: var(--font-serif); font-size: 1.15rem; color: #0F172A; margin: 0;">
+                  Recent Incoming Inspection Batches
+                </h3>
+              </div>
+              <p style="font-size: 0.8rem; color: #64748B; margin: 0.2rem 0 0 0;">
+                Latest retail field inspection batches submitted across your assigned circles.
+              </p>
+            </div>
+            <button type="button" class="btn-secondary" id="btnGoToFullQueue" style="font-size: 0.8rem; padding: 0.35rem 0.8rem;">
+              View Full Queue →
+            </button>
+          </div>
+          <div id="recentIncomingBatchesList" style="padding: 0.75rem 1.4rem;">
+            <div style="padding: 1rem; color: #64748B; font-size: 0.85rem; text-align: center;">Loading incoming inspection batches...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           VIEW 2: REVIEW QUEUE
+           ==================================================================== -->
+      <section class="officer-view-pane hidden" id="viewQueue">
+        <div class="officer-section-header">
+          <div>
+            <h2 class="officer-section-title">Batch Review Queue</h2>
+            <p class="officer-section-desc">Field inspection batches submitted by your assigned Legal Metrology Officers.</p>
+          </div>
+          <div class="inbox-filter-group" style="display:flex; gap:0.75rem; align-items:center;">
+            <select id="filterQueueInspector" class="select-input" style="min-width: 170px;">
+              <option value="all">All Assigned Inspectors</option>
+            </select>
+            <select id="officerBatchStatusFilter" class="select-input" style="min-width: 150px;">
+              <option value="submitted" selected>Pending Review</option>
+              <option value="under_review">Under Review</option>
+              <option value="all">All Active Batches</option>
+            </select>
+            <button type="button" id="btnRefreshOfficerQueue" class="btn-secondary" style="display:flex; align-items:center; gap:0.4rem; padding:0.45rem 0.85rem; font-size:0.82rem; cursor:pointer;">
+              <span class="refresh-icon">🔄</span> Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Jurisdictional Batch Inbox Table -->
+        <div class="card officer-inbox-card" id="officerInboxCard">
+          <div class="table-wrapper">
+            <table class="officer-queue-table" id="officerQueueTable">
+              <thead>
+                <tr>
+                  <th>Batch ID</th>
+                  <th>Establishment / Location</th>
+                  <th>Field Inspector</th>
+                  <th>Submission Date</th>
+                  <th>Items</th>
+                  <th>Field Verdict</th>
+                  <th>Status</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="officerQueueTableBody">
+                <tr>
+                  <td colspan="8" class="table-empty">Loading batches...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Active Batch Review Detail View (Workbench) -->
+        <div class="card officer-workbench-card hidden" id="officerWorkbenchCard">
+          <div class="workbench-header">
+            <div class="workbench-title-area">
+              <button type="button" class="btn-text" id="btnBackToOfficerInbox">
+                ← Back to Batches
+              </button>
+              <div class="workbench-batch-meta">
+                <h3 class="workbench-batch-id" id="workbenchBatchId">BATCH-2026-XXXX</h3>
+                <span class="workbench-establishment" id="workbenchEstablishment">Store Name • Location</span>
+                <span class="status-pill" id="workbenchBatchStatusPill">In Review</span>
+              </div>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 0.75rem; margin-left: auto;">
+              <!-- Bulk Action: Approve All Clean Items -->
+              <button type="button" class="btn-primary" id="btnApproveAllClean" style="background: #059669; border-color: #047857; font-size: 0.85rem; padding: 0.5rem 1rem;">
+                ✓ Approve All Clean Items
+              </button>
+              <div class="workbench-stats-summary" id="workbenchStatsSummary"></div>
+            </div>
+          </div>
+
+          <!-- Items in this batch table -->
+          <div class="workbench-items-list" id="workbenchItemsList"></div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           VIEW 3: INSPECTORS
+           ==================================================================== -->
+      <section class="officer-view-pane hidden" id="viewInspectors">
+        <div class="officer-section-header">
+          <div>
+            <h2 class="officer-section-title">Assigned Field Inspectors</h2>
+            <p class="officer-section-desc">Legal Metrology Officers reporting to your jurisdiction under official departmental mapping.</p>
+          </div>
+        </div>
+
+        <div class="card" style="padding: 1.25rem;">
+          <div class="table-wrapper">
+            <table class="officer-queue-table" id="officerInspectorsTable">
+              <thead>
+                <tr>
+                  <th>Inspector ID</th>
+                  <th>Full Name</th>
+                  <th>Jurisdiction Circle</th>
+                  <th>Total Batches</th>
+                  <th>Items</th>
+                  <th>Compliant Rate</th>
+                  <th>Last Submission</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="officerInspectorsTableBody">
+                <tr>
+                  <td colspan="8" class="table-empty">Loading assigned inspectors...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Inspector Specific Submission History Drawer/Panel -->
+        <div class="card hidden" id="inspectorHistoryContainer" style="padding: 1.25rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid #E2E8F0; padding-bottom: 0.75rem;">
+            <div>
+              <h3 style="font-family: var(--font-serif); font-size: 1.15rem; color: #14163A;" id="inspectorHistoryTitle">
+                Submission History: Rajesh Kumar (LMO-DL-04)
+              </h3>
+              <p style="font-size: 0.8rem; color: #64748B;">Complete historical dossier records across all inspection cycles.</p>
+            </div>
+            <button type="button" class="btn-secondary" id="btnCloseInspectorHistory" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;">
+              ✕ Close History
+            </button>
+          </div>
+          <div class="table-wrapper">
+            <table class="officer-queue-table" id="inspectorHistoryTable">
+              <thead>
+                <tr>
+                  <th>Batch ID</th>
+                  <th>Store / Establishment</th>
+                  <th>Submission Date</th>
+                  <th>Items</th>
+                  <th>Compliance</th>
+                  <th>Status</th>
+                  <th style="text-align: right;">Action</th>
+                </tr>
+              </thead>
+              <tbody id="inspectorHistoryTableBody">
+                <tr><td colspan="7" class="table-empty">Loading history...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           VIEW 4: LEDGER
+           ==================================================================== -->
+      <section class="officer-view-pane hidden" id="viewLedger">
+        <div class="officer-section-header">
+          <div>
+            <h2 class="officer-section-title">Permanent Regulatory Ledger</h2>
+            <p class="officer-section-desc">Audited and adjudicated specimen records approved to the official enforcement ledger.</p>
+          </div>
+        </div>
+
+        <!-- Ledger Controls & Filters -->
+        <div class="ledger-controls-bar">
+          <input type="text" id="ledgerSearchInput" class="ledger-search-input" placeholder="Search commodity, manufacturer, item ID, or store..." />
+          
+          <select id="ledgerCategoryFilter" class="select-input" style="min-width: 150px;">
+            <option value="all">All Categories</option>
+            <option value="Packaged Food">Packaged Food</option>
+            <option value="Cosmetics & Personal Care">Cosmetics &amp; Personal Care</option>
+            <option value="Beverages">Beverages</option>
+            <option value="Pharmaceuticals">Pharmaceuticals</option>
+            <option value="General">General</option>
+          </select>
+
+          <select id="ledgerStatusFilter" class="select-input" style="min-width: 140px;">
+            <option value="all">All Verdicts</option>
+            <option value="compliant">Compliant</option>
+            <option value="non_compliant">Non-Compliant</option>
+          </select>
+
+          <button type="button" class="btn-secondary" id="btnRefreshLedger" style="font-size: 0.85rem; padding: 0.5rem 0.9rem;">
+            Filter ↻
           </button>
         </div>
-      </div>
 
-      <!-- Officer KPI Metrics -->
-      <div class="officer-kpi-grid">
-        <div class="officer-kpi-card">
-          <div class="kpi-label">Pending Batches</div>
-          <div class="kpi-number" id="kpiOfficerPendingBatches">0</div>
-          <div class="kpi-subtext">Awaiting regulatory review</div>
+        <!-- Bulk Action Bar: Active when items are selected -->
+        <div class="ledger-bulk-bar hidden" id="ledgerBulkBar">
+          <div style="font-size: 0.85rem; color: #1E1B4B; font-weight: 600;">
+            <span id="ledgerSelectedCountBadge">0</span> specimen record(s) selected
+          </div>
+          <button type="button" class="btn-primary" id="btnGenerateCombinedLedgerPdf" style="background: #1E1B4B; border-color: #C79A3E; font-size: 0.82rem; padding: 0.4rem 0.95rem;">
+            📄 Generate Combined PDF Report →
+          </button>
         </div>
-        <div class="officer-kpi-card">
-          <div class="kpi-label">Specimens to Adjudicate</div>
-          <div class="kpi-number" id="kpiOfficerPendingItems">0</div>
-          <div class="kpi-subtext">Individual packages in queue</div>
-        </div>
-        <div class="officer-kpi-card accent-approved">
-          <div class="kpi-label">Approved to Ledger</div>
-          <div class="kpi-number" id="kpiOfficerApprovedItems">0</div>
-          <div class="kpi-subtext">Confirmed regulatory compliance</div>
-        </div>
-        <div class="officer-kpi-card accent-override">
-          <div class="kpi-label">Verdict Overrides</div>
-          <div class="kpi-number" id="kpiOfficerOverriddenItems">0</div>
-          <div class="kpi-subtext">Symmetric officer decisions</div>
-        </div>
-      </div>
 
-      <!-- Jurisdictional Batch Inbox -->
-      <div class="card officer-inbox-card" id="officerInboxCard">
-        <div class="card-header officer-inbox-header">
+        <!-- Ledger Table -->
+        <div class="card" style="padding: 1.25rem;">
+          <div class="table-wrapper">
+            <table class="officer-queue-table" id="officerLedgerTable">
+              <thead>
+                <tr>
+                  <th style="width: 36px; text-align: center;">
+                    <input type="checkbox" id="chkLedgerSelectAll" style="accent-color: #1E1B4B; transform: scale(1.1); cursor: pointer;" />
+                  </th>
+                  <th>Item ID</th>
+                  <th>Commodity / Product</th>
+                  <th>Category</th>
+                  <th>Store / Establishment</th>
+                  <th>Inspector</th>
+                  <th>Verdict</th>
+                  <th>Action Log</th>
+                  <th style="text-align: right;">Report</th>
+                </tr>
+              </thead>
+              <tbody id="officerLedgerTableBody">
+                <tr>
+                  <td colspan="9" class="table-empty">Loading ledger records...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================================
+           VIEW 5: REPORTS
+           ==================================================================== -->
+      <section class="officer-view-pane hidden" id="viewReports">
+        <div class="officer-section-header">
           <div>
-            <h3 class="card-title">Jurisdictional Inspection Batch Queue</h3>
-            <p class="card-description">Field inspection dossiers submitted by Legal Metrology Officers for adjudication.</p>
-          </div>
-          <div class="inbox-filter-group">
-            <label for="officerBatchStatusFilter" class="filter-label">Filter Status:</label>
-            <select id="officerBatchStatusFilter" class="select-input">
-              <option value="all">All Batches</option>
-              <option value="submitted" selected>Pending Review</option>
-              <option value="completed">Completed / Approved</option>
-            </select>
+            <h2 class="officer-section-title">Stage 3 Executive Reporting &amp; Analytics</h2>
+            <p class="officer-section-desc">Generate official statutory compliance dossiers, violation trends, and inspector audit reports.</p>
           </div>
         </div>
 
-        <div class="table-wrapper">
-          <table class="officer-queue-table" id="officerQueueTable">
-            <thead>
-              <tr>
-                <th>Batch ID</th>
-                <th>Establishment / Location</th>
-                <th>Field Inspector</th>
-                <th>Submission Date</th>
-                <th>Specimens</th>
-                <th>Field Verdict</th>
-                <th>Status</th>
-                <th style="text-align: right;">Action</th>
-              </tr>
-            </thead>
-            <tbody id="officerQueueTableBody">
-              <tr>
-                <td colspan="8" class="table-empty">Loading jurisdictional review queue...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+        <!-- Reports Filter Bar (Date Presets & Date Picker) -->
+        <div class="reports-filter-bar">
+          <label style="font-size: 0.82rem; font-weight: 600; color: #1E1B4B;">Reporting Period:</label>
+          <button type="button" class="btn-secondary btn-range-preset active" data-days="7" style="font-size: 0.78rem; padding: 0.35rem 0.75rem;">Last 7 Days</button>
+          <button type="button" class="btn-secondary btn-range-preset" data-days="30" style="font-size: 0.78rem; padding: 0.35rem 0.75rem;">Last 30 Days</button>
+          <button type="button" class="btn-secondary btn-range-preset" data-days="90" style="font-size: 0.78rem; padding: 0.35rem 0.75rem;">This Quarter</button>
 
-      <!-- Active Batch Review Detail View -->
-      <div class="card officer-workbench-card hidden" id="officerWorkbenchCard">
-        <div class="workbench-header">
-          <div class="workbench-title-area">
-            <button type="button" class="btn-text" id="btnBackToOfficerInbox">
-              ← Back to Queue
+          <div style="display: flex; align-items: center; gap: 0.4rem; margin-left: auto;">
+            <span style="font-size: 0.78rem; color: #64748B;">From:</span>
+            <input type="date" id="reportDateFrom" class="select-input" style="font-size: 0.8rem; padding: 0.3rem 0.5rem;" />
+            <span style="font-size: 0.78rem; color: #64748B;">To:</span>
+            <input type="date" id="reportDateTo" class="select-input" style="font-size: 0.8rem; padding: 0.3rem 0.5rem;" />
+            
+            <button type="button" class="btn-primary" id="btnDownloadAggregatePdf" style="background: #14163A; border-color: #C79A3E; font-size: 0.85rem; padding: 0.45rem 1rem; margin-left: 0.5rem;">
+              📥 Download Executive PDF Report
             </button>
-            <div class="workbench-batch-meta">
-              <h3 class="workbench-batch-id" id="workbenchBatchId">BATCH-2026-XXXX</h3>
-              <span class="workbench-establishment" id="workbenchEstablishment">Store Name • Location</span>
-              <span class="status-pill" id="workbenchBatchStatusPill">In Review</span>
-            </div>
           </div>
-          <div class="workbench-stats-summary" id="workbenchStatsSummary"></div>
         </div>
 
-        <!-- Items in this batch table -->
-        <div class="workbench-items-list" id="workbenchItemsList"></div>
-      </div>
-    </main>
+        <!-- Executive Metrics Overview -->
+        <div class="officer-kpi-grid">
+          <div class="officer-kpi-card">
+            <div class="kpi-label">Total Specimens Scanned</div>
+            <div class="kpi-number" id="rptTotalScans">0</div>
+            <div class="kpi-subtext">In selected reporting window</div>
+          </div>
+          <div class="officer-kpi-card accent-approved">
+            <div class="kpi-label">Statutory Compliance Rate</div>
+            <div class="kpi-number" id="rptComplianceRate">0%</div>
+            <div class="kpi-subtext" id="rptCompliantSub">0 compliant packages</div>
+          </div>
+          <div class="officer-kpi-card accent-override">
+            <div class="kpi-label">Statutory Violations</div>
+            <div class="kpi-number" id="rptNonCompliantCount">0</div>
+            <div class="kpi-subtext">Rule 6 infractions detected</div>
+          </div>
+          <div class="officer-kpi-card">
+            <div class="kpi-label">Active Field Inspectors</div>
+            <div class="kpi-number" id="rptActiveInspectorsCount">0</div>
+            <div class="kpi-subtext">Conducting inspections</div>
+          </div>
+        </div>
 
-    <footer class="app-footer">
-      <span>LabelLens • Official Adjudication Command Center • Legal Metrology Act, 2009</span>
-    </footer>
+        <!-- Top Statutory Violations Ranking -->
+        <div class="card" style="padding: 1.25rem;">
+          <h3 style="font-family: var(--font-serif); font-size: 1.15rem; color: #14163A; margin-bottom: 0.35rem;">
+            Most Frequent Rule 6 Declaration Infractions
+          </h3>
+          <p style="font-size: 0.8rem; color: #64748B; margin-bottom: 1rem;">
+            Ranked frequency of missing mandatory particulars across all non-compliant commodities.
+          </p>
+          <div class="table-wrapper">
+            <table class="officer-queue-table" id="rptTopViolationsTable">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Mandatory Statutory Requirement</th>
+                  <th>Legal Rule Citation</th>
+                  <th>Infractions Detected</th>
+                  <th>% of Violations</th>
+                </tr>
+              </thead>
+              <tbody id="rptTopViolationsTableBody">
+                <tr><td colspan="5" class="table-empty">Loading violation rankings...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
   </div>
 
-  <!-- Senior Officer Specimen Review Modal (Split View Workbench) -->
+  <!-- Senior Officer Item Review Modal (Split View Workbench) -->
   <div class="modal-overlay hidden" id="officerReviewModal">
     <div class="modal-container officer-modal-container">
       <!-- Modal Header -->
       <div class="modal-header">
         <div class="modal-header-info">
-          <span class="modal-pre-title">Legal Metrology Specimen Review • Section 15 / 36</span>
-          <h2 class="modal-title" id="modalCommodityTitle">Packaged Commodity Specimen</h2>
+          <span class="modal-pre-title">Item Review • Rule 6 Statutory Verification</span>
+          <h2 class="modal-title" id="modalCommodityTitle">Packaged Commodity Item</h2>
           <div class="modal-meta-row">
             <span class="meta-item" id="modalBatchRef">Batch: --</span>
             <span class="meta-item" id="modalInspectorRef">Inspector: --</span>
@@ -173,7 +511,13 @@
             <span class="status-pill" id="modalFieldVerdictPill">Preliminary: Checking</span>
           </div>
         </div>
-        <button type="button" class="modal-close-btn" id="btnCloseOfficerModal">✕</button>
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-left: auto;">
+          <!-- Inline Level 1 PDF Generation from Review Modal -->
+          <button type="button" class="btn-secondary" id="btnModalGeneratePdf" title="Download PDF Compliance Report" style="font-size: 0.8rem; padding: 0.35rem 0.75rem;">
+            📄 Export PDF
+          </button>
+          <button type="button" class="modal-close-btn" id="btnCloseOfficerModal">✕</button>
+        </div>
       </div>
 
       <!-- Modal Body (Split Layout) -->
@@ -181,7 +525,7 @@
         <!-- Left: Evidence Photos -->
         <div class="modal-evidence-panel">
           <div class="evidence-header">
-            <span class="panel-subtitle">Multi-angle specimen evidence</span>
+            <span class="panel-subtitle">Multi-angle photo evidence</span>
             <div class="angle-switch-tabs" id="modalAngleTabs">
               <button type="button" class="angle-tab-btn active" data-angle="front">Front (PDP)</button>
               <button type="button" class="angle-tab-btn" data-angle="back">Back (Info)</button>
@@ -190,7 +534,7 @@
           </div>
 
           <div class="evidence-image-viewport" id="modalImageViewport">
-            <img id="modalEvidenceImage" alt="Specimen angle evidence" />
+            <img id="modalEvidenceImage" alt="Item angle evidence" />
             <div class="image-blur-indicator" id="modalImageBlurBadge">Blur: Sharp</div>
           </div>
 
@@ -209,8 +553,8 @@
         <!-- Right: Legal Audit & Decisions -->
         <div class="modal-audit-panel">
           <div class="audit-tabs">
-            <button type="button" class="audit-tab-btn active" id="tabRule6Audit">Rule 6 Statutory checklist (10)</button>
-            <button type="button" class="audit-tab-btn" id="tabSpecialRegsAudit">Rule 9 & Special clauses</button>
+            <button type="button" class="audit-tab-btn active" id="tabRule6Audit">Rule 6 Checklist (10)</button>
+            <button type="button" class="audit-tab-btn" id="tabSpecialRegsAudit">Rule 9 &amp; Special clauses</button>
           </div>
 
           <!-- Tab Content 1: Rule 6 -->
@@ -221,6 +565,16 @@
               <span>Status</span>
             </div>
             <div class="rule6-items-container" id="modalRule6List"></div>
+
+            <!-- Staged Edit Controls & Save Button -->
+            <div class="officer-edit-save-bar" style="display: flex; justify-content: space-between; align-items: center; padding: 0.65rem 0.85rem; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; margin-top: 0.6rem;">
+              <div style="font-size: 0.78rem; color: #475569; display: flex; align-items: center; gap: 0.4rem;">
+                <span id="stagedEditStatus">✎ Click inputs to edit values or toggle Present/Absent</span>
+              </div>
+              <button type="button" class="btn-primary" id="btnSaveDeclarationEdits" style="background: #14163A; border: 1px solid #C79A3E; color: #FFFFFF; font-size: 0.78rem; padding: 0.35rem 0.85rem; font-weight: 600; cursor: pointer; border-radius: 4px;">
+                💾 Save Declaration Edits
+              </button>
+            </div>
           </div>
 
           <!-- Tab Content 2: Rule 9 & Penalties -->
@@ -235,7 +589,7 @@
 
             <div class="special-regs-box" id="modalPanMasalaBox">
               <h4 class="box-heading">Pan Masala / Tobacco Warning Mandate</h4>
-              <p class="box-desc">Rule 6(1)(g) & Cigarettes and Other Tobacco Products Act: Warning must occupy not less than 50% of PDP.</p>
+              <p class="box-desc">Rule 6(1)(g) &amp; Cigarettes and Other Tobacco Products Act: Warning must occupy not less than 50% of PDP.</p>
               <div class="special-reg-status" id="modalPanMasalaStatus">Not applicable for this commodity.</div>
             </div>
 
@@ -266,7 +620,7 @@
           <div class="officer-decision-box">
             <label for="officerRemarksInput" class="decision-label">
               <span>Reviewing Officer Remarks / Legal Justification</span>
-              <span class="required-note" id="remarksRequiredNote">(Required for Overrides & Recapture)</span>
+              <span class="required-note" id="remarksRequiredNote">(Required for Overrides &amp; Recapture)</span>
             </label>
             <textarea id="officerRemarksInput" class="remarks-textarea" placeholder="Enter judicial rationale, reason for overriding field verdict, or specific instructions for inspector recapture..."></textarea>
           </div>
@@ -275,7 +629,7 @@
           <div class="officer-actions-grid">
             <button type="button" class="btn-action-approve" id="btnOfficerApproveAsIs">
               <div class="action-btn-title">✓ Approve As-Is</div>
-              <div class="action-btn-sub">Endorse findings & store to ledger</div>
+              <div class="action-btn-sub">Endorse findings &amp; store to ledger</div>
             </button>
 
             <button type="button" class="btn-action-override" id="btnOfficerOverride">
@@ -289,11 +643,109 @@
             </button>
 
             <button type="button" class="btn-action-correct" id="btnOfficerCorrect">
-              <div class="action-btn-title">✎ Correct & Remark</div>
-              <div class="action-btn-sub">Adjust values, endorse & finalize</div>
+              <div class="action-btn-title">✎ Correct &amp; Remark</div>
+              <div class="action-btn-sub">Adjust values, endorse &amp; finalize</div>
             </button>
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Executive Aggregate Report Selection & Generation Modal -->
+  <div class="modal-overlay hidden" id="aggregateReportModal">
+    <div class="modal-container" style="max-width: 860px; max-height: 90vh; background: #FFFFFF; border-radius: 12px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 24px 48px rgba(0,0,0,0.25); border: 1px solid #E2E8F0;">
+      <!-- Modal Header -->
+      <div class="modal-header" style="background: #14163A; color: #FFFFFF; border-bottom: 2px solid #C79A3E; padding: 1.25rem 1.5rem;">
+        <div class="modal-header-info">
+          <span class="modal-pre-title" style="color: #C79A3E; font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 700;">Directorate of Legal Metrology • Stage 3 Reporting</span>
+          <h2 class="modal-title" style="font-family: var(--font-serif); font-size: 1.25rem; color: #FFFFFF; margin: 0.2rem 0;">Executive Aggregate Compliance Dossier</h2>
+          <span style="font-size: 0.8rem; color: #94A3B8;">Configure scope, date window, and verdict filter prior to generating multi-page official audit PDF</span>
+        </div>
+        <button type="button" class="modal-close-btn" id="btnCloseAggregateReportModal" aria-label="Close" style="color: #FFFFFF; background: transparent; border: none; font-size: 1.5rem; cursor: pointer; line-height: 1;">&times;</button>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="modal-body" style="padding: 1.25rem 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem;">
+        <!-- Filters Row -->
+        <div style="background: #FAF9F6; border: 1px solid #E2E8F0; border-radius: 8px; padding: 1rem 1.25rem; display: grid; grid-template-columns: 1fr 1fr 1.3fr; gap: 1rem; align-items: flex-end;">
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 600; color: #1E1B4B; margin-bottom: 0.35rem;">Start Date (From):</label>
+            <input type="date" id="modalRptDateFrom" class="select-input" style="width: 100%; font-size: 0.82rem; padding: 0.45rem 0.6rem;" />
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 600; color: #1E1B4B; margin-bottom: 0.35rem;">End Date (To):</label>
+            <input type="date" id="modalRptDateTo" class="select-input" style="width: 100%; font-size: 0.82rem; padding: 0.45rem 0.6rem;" />
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.78rem; font-weight: 600; color: #1E1B4B; margin-bottom: 0.35rem;">Verdict Filter:</label>
+            <select id="modalRptVerdictFilter" class="select-input" style="width: 100%; font-size: 0.82rem; padding: 0.45rem 0.6rem; font-weight: 600;">
+              <option value="all">All items (Compliant + Non-compliant)</option>
+              <option value="compliant">Compliant only</option>
+              <option value="non_compliant">Non-compliant only</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Matching Summary & Quick Stats -->
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; background: #EEF2FF; border-left: 4px solid #4338CA; border-radius: 4px;">
+          <div>
+            <span style="font-size: 0.85rem; color: #1E1B4B; font-weight: 600;" id="modalRptMatchCount">Matching Items: Loading...</span>
+            <span style="font-size: 0.78rem; color: #64748B; margin-left: 0.5rem;" id="modalRptMatchBreakdown"></span>
+          </div>
+          <button type="button" class="btn-secondary" id="btnModalRptRefreshPreview" style="font-size: 0.75rem; padding: 0.3rem 0.65rem;">
+            ⟳ Refresh Preview
+          </button>
+        </div>
+
+        <!-- 7-Column Preview Table -->
+        <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 0.82rem; font-weight: 700; color: #14163A; text-transform: uppercase; letter-spacing: 0.04em;">
+              Item Audit Ledger Preview (Page 2+ Table)
+            </span>
+            <span style="font-size: 0.75rem; color: #64748B;" id="modalRptPreviewCountNote">Showing preview records</span>
+          </div>
+
+          <div class="table-wrapper" style="max-height: 240px; overflow-y: auto; border: 1px solid #E2E8F0; border-radius: 6px;">
+            <table class="officer-queue-table" style="font-size: 0.78rem; width: 100%;">
+              <thead style="position: sticky; top: 0; background: #14163A; color: #FFFFFF; z-index: 2;">
+                <tr>
+                  <th style="padding: 0.5rem 0.6rem; color: #FFFFFF;">Product Name</th>
+                  <th style="padding: 0.5rem 0.6rem; color: #FFFFFF;">Category</th>
+                  <th style="padding: 0.5rem 0.6rem; color: #FFFFFF;">Verdict</th>
+                  <th style="padding: 0.5rem 0.6rem; color: #FFFFFF;">Missing Declarations</th>
+                  <th style="padding: 0.5rem 0.6rem; color: #FFFFFF;">Inspector</th>
+                  <th style="padding: 0.5rem 0.6rem; color: #FFFFFF;">Batch</th>
+                  <th style="padding: 0.5rem 0.6rem; color: #FFFFFF;">Date</th>
+                </tr>
+              </thead>
+              <tbody id="modalRptPreviewTableBody">
+                <tr><td colspan="7" class="table-empty">Loading matching items...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Report Output Structure Notice -->
+        <div style="background: #F8FAFC; border: 1px dashed #CBD5E1; border-radius: 6px; padding: 0.75rem 1rem; font-size: 0.78rem; color: #475569; line-height: 1.4;">
+          <strong style="color: #14163A;">📄 Multi-Page Document Structure:</strong>
+          <ul style="margin: 0.25rem 0 0 1.2rem; padding: 0;">
+            <li><strong>Page 1 — Executive Summary:</strong> Key audit metrics (Total, Compliant, Non-compliant), ranked top Rule 6 statutory infractions, and field inspector performance breakdown.</li>
+            <li><strong>Page 2+ — Items Ledger:</strong> Full 7-column tabular audit ledger for all selected records with official seal and page pagination.</li>
+            <li><strong>Appended Dossiers:</strong> Full per-item photographic evidence and 10-row Rule 6 statutory checklist sheets for all selected records.</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="modal-footer" style="padding: 1rem 1.5rem; background: #FAF9F6; border-top: 1px solid #E2E8F0; display: flex; justify-content: flex-end; gap: 0.75rem;">
+        <button type="button" class="btn-secondary" id="btnCancelAggregateReportModal" style="font-size: 0.85rem; padding: 0.5rem 1.1rem;">
+          Cancel
+        </button>
+        <button type="button" class="btn-primary" id="btnConfirmGenerateAggregatePdf" style="background: #14163A; border-color: #C79A3E; color: #FFFFFF; font-size: 0.85rem; padding: 0.5rem 1.25rem; font-weight: 600; display: flex; align-items: center; gap: 0.4rem;">
+          📥 Generate Official PDF Report
+        </button>
       </div>
     </div>
   </div>

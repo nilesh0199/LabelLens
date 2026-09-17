@@ -199,6 +199,14 @@ class GuidedCameraEngine {
 
   // ✕ RETAKE ACTION: Discards snapshot and immediately retakes the SAME slot
   retakeCurrentAngle() {
+    if (this._customRetakeCallback) {
+      const cb = this._customRetakeCallback;
+      this._customConfirmCallback = null;
+      this._customRetakeCallback = null;
+      if (this.modalEl) this.modalEl.classList.add('hidden');
+      cb();
+      return;
+    }
     this.currentSnapshotBlob = null;
     this.currentSnapshotDataUrl = null;
     this.initCurrentAngleStream();
@@ -218,8 +226,20 @@ class GuidedCameraEngine {
 
   // ✓ ACCEPT ACTION: Saves immediately and transitions to next capture instantly (no delay)
   acceptCurrentAngle() {
+    if (this._customConfirmCallback) {
+      const cb = this._customConfirmCallback;
+      const file = this.currentSnapshotBlob;
+      const dataUrl = this.currentSnapshotDataUrl;
+      this._customConfirmCallback = null;
+      this._customRetakeCallback = null;
+      this.close();
+      cb(file, dataUrl);
+      return;
+    }
+
     const isGuided = this.currentStepIdx < this.angles.length;
     const angleId = isGuided ? this.angles[this.currentStepIdx].id : `extra_${this.extraCount}`;
+
 
     if (!this.currentSnapshotBlob && this.currentSnapshotDataUrl) {
       const arr = this.currentSnapshotDataUrl.split(',');
@@ -321,11 +341,47 @@ class GuidedCameraEngine {
     this.initCurrentAngleStream();
   }
 
+  // Show Confirm / Retake Review screen for a single photo (e.g. chosen from gallery or camera)
+  showReviewForImage(file, dataUrl, angleTitle = 'Review Photo', onConfirm, onRetake) {
+    this.stopMediaStream();
+    this.currentSnapshotBlob = file;
+    this.currentSnapshotDataUrl = dataUrl;
+    this._customConfirmCallback = onConfirm;
+    this._customRetakeCallback = onRetake;
+
+    if (this.modalEl) this.modalEl.classList.remove('hidden');
+    if (this.videoEl) this.videoEl.classList.add('hidden');
+    if (this.liveControlsEl) this.liveControlsEl.classList.add('hidden');
+    if (this.postGuidedControlsEl) this.postGuidedControlsEl.classList.add('hidden');
+    if (this.skipBtnEl) {
+      this.skipBtnEl.classList.add('hidden');
+      this.skipBtnEl.style.display = 'none';
+    }
+
+    if (this.angleTitleEl) this.angleTitleEl.textContent = angleTitle;
+    if (this.anglePromptEl) this.anglePromptEl.textContent = 'Check image clarity and tap Confirm to replace, or Retake.';
+
+    if (this.previewImgEl) {
+      this.previewImgEl.src = dataUrl;
+      this.previewImgEl.classList.remove('hidden');
+    }
+    if (this.reviewControlsEl) this.reviewControlsEl.classList.remove('hidden');
+
+    if (this.blurBadgeEl) {
+      this.blurBadgeEl.classList.remove('hidden');
+      this.blurBadgeEl.className = 'camera-blur-badge badge-sharp';
+      this.blurBadgeEl.textContent = '✓ Photo Selected';
+    }
+  }
+
   close() {
     this.stopMediaStream();
+    this._customConfirmCallback = null;
+    this._customRetakeCallback = null;
     if (this.modalEl) this.modalEl.classList.add('hidden');
     this.onCompleted(this.capturedData);
   }
+
 }
 
 window.GuidedCameraEngine = GuidedCameraEngine;

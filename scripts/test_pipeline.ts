@@ -32,9 +32,12 @@ async function runTests() {
   assert(isSingleUnitPackage('1 piece', 'Hand Soap', '') === true, 'Single unit "1 piece" recognized');
   assert(isSingleUnitPackage('1 unit', 'USB-C Cable', '') === true, 'Single unit "1 unit" recognized');
   assert(isSingleUnitPackage('1 count', 'Phone Cover', '') === true, 'Single unit "1 count" recognized');
-  assert(isSingleUnitPackage('500 g', 'Wheat Flour', '') === false, 'Multi-unit "500 g" not single unit');
-  assert(isSingleUnitPackage('1 kg', 'Sugar', '') === false, 'Weight "1 kg" not single unit');
-  assert(isSingleUnitPackage('200 ml', 'Coconut Oil', '') === false, 'Volume "200 ml" not single unit');
+  assert(isSingleUnitPackage('500 g', 'Wheat Flour', '') === true, 'Single retail unit "500 g" recognized as single unit (USP exempt)');
+  assert(isSingleUnitPackage('1 kg', 'Tata Salt', '') === true, 'Single retail unit "1 kg" recognized as single unit (USP exempt)');
+  assert(isSingleUnitPackage('200 ml', 'Coconut Oil', '') === true, 'Single retail unit "200 ml" recognized as single unit (USP exempt)');
+  assert(isSingleUnitPackage('Pack of 6, 100g each', 'Bath Soap', '') === false, 'Genuine multi-pack "Pack of 6" recognized as multi-unit (USP required)');
+  assert(isSingleUnitPackage('6x100g', 'Biscuits', '') === false, 'Multi-pack notation "6x100g" recognized as multi-unit (USP required)');
+  assert(isSingleUnitPackage('Combo of 3', 'Shampoo', '') === false, 'Bundle "Combo of 3" recognized as multi-unit (USP required)');
 
   // ---------------------------------------------------------------
   // 2. Rule 6 Mandatory Declarations & "Needs Review" Flagging
@@ -59,20 +62,20 @@ async function runTests() {
   const res3 = checkNeedsReview(0.85, allMandatory, [], '500 g', 'Flour', '');
   assert(res3.needsReview === false, 'Exact 85% confidence -> Needs Review is FALSE');
 
-  // Missing Country of Origin
+  // Missing Country of Origin on Imported
   const missingCoo = allMandatory.filter(k => k !== 'country_of_origin');
-  const res4 = checkNeedsReview(0.95, missingCoo, ['country_of_origin'], '500 g', 'Flour', '');
-  assert(res4.needsReview === true, 'Missing Country of Origin -> Needs Review is TRUE');
+  const res4 = checkNeedsReview(0.95, missingCoo, ['country_of_origin'], '500 g', 'Flour', '', 'Imported');
+  assert(res4.needsReview === true, 'Missing Country of Origin on Imported -> Needs Review is TRUE');
   assert(res4.reasons.some(r => r.includes('Country of Origin')), 'Reason mentions Country of Origin');
 
-  // Single-unit package missing USP -> EXEMPT from USP -> NOT flagged
+  // Single-unit package (1 kg) missing USP -> EXEMPT from USP -> NOT flagged
   const withoutUsp = allMandatory.filter(k => k !== 'unit_sale_price');
-  const res5 = checkNeedsReview(0.90, withoutUsp, ['unit_sale_price'], '1 N', 'Toothbrush', '');
-  assert(res5.needsReview === false, 'Single-unit package "1 N" missing USP -> NOT flagged (USP exempt)');
+  const res5 = checkNeedsReview(0.90, withoutUsp, ['unit_sale_price'], '1 kg', 'Tata Salt', '');
+  assert(res5.needsReview === false, 'Single-unit package "1 kg" missing USP -> NOT flagged (USP exempt)');
 
-  // Multi-unit package missing USP -> NOT exempt -> FLAGGED
-  const res6 = checkNeedsReview(0.90, withoutUsp, ['unit_sale_price'], '500 g', 'Rice', '');
-  assert(res6.needsReview === true, 'Multi-unit package "500 g" missing USP -> FLAGGED');
+  // Genuine multi-pack package missing USP -> NOT exempt -> FLAGGED
+  const res6 = checkNeedsReview(0.90, withoutUsp, ['unit_sale_price'], 'Pack of 6, 100g each', 'Bath Soap', '');
+  assert(res6.needsReview === true, 'Multi-pack package "Pack of 6" missing USP -> FLAGGED');
   assert(res6.reasons.some(r => r.includes('Unit Sale Price (USP)')), 'Reason mentions Unit Sale Price (USP)');
 
   // Verdict Independence: Compliant with low confidence
@@ -131,9 +134,7 @@ async function runTests() {
     item_id: `ITEM-TS-${Date.now()}`,
     batch_id: testBatch.batch_id,
     product_name: 'Parle-G Gluco Biscuits 250g',
-    product_category: 'Packaged Food',
-    photos: [{ angle: 'front', url: 'data:image/jpeg;base64,...' }],
-    compliant: true,
+    photos: [{ angle: 'front', url: `${process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://zrgrucpghxdtailgcpam.supabase.co'}/storage/v1/object/public/specimen-photos/uploads/test_item.jpg` }],
     confidence: 0.94,
     declarations_found: allMandatory,
     declarations_missing: [],
@@ -141,6 +142,8 @@ async function runTests() {
     raw_ocr_text: sampleOcr,
     cleaned_summary: parsed.cleaned_summary,
     status: 'draft',
+    product_category: 'Packaged Food',
+    compliant: true,
     needs_review: false,
     review_reasons: [],
     created_at: new Date().toISOString(),

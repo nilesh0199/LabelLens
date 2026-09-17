@@ -244,6 +244,164 @@
       max-width: 600px;
     }
 
+    /* Admin Scalability Entry Point (Deliberate system scalability note) */
+    .admin-scalability-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.85rem;
+    }
+
+    .btn-admin-scalability {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 999px;
+      padding: 0.3rem 0.8rem;
+      font-family: var(--font-sans);
+      font-size: 0.74rem;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s ease;
+      letter-spacing: 0.02em;
+    }
+
+    .btn-admin-scalability:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.22);
+      color: rgba(255, 255, 255, 0.9);
+      transform: translateY(-1px);
+    }
+
+    .btn-admin-scalability:active {
+      transform: translateY(0);
+    }
+
+    .btn-admin-scalability svg {
+      opacity: 0.7;
+      flex-shrink: 0;
+    }
+
+    .admin-scalability-badge {
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--gold-accent);
+      background: rgba(199, 154, 62, 0.12);
+      border: 1px solid rgba(199, 154, 62, 0.25);
+      padding: 0.08rem 0.45rem;
+      border-radius: 999px;
+      margin-left: 0.15rem;
+    }
+
+    /* Universal Dialog System Styles for showAlert / showConfirm */
+    .app-dialog-card {
+      max-width: 440px;
+      padding: 1.6rem 1.6rem 1.4rem;
+      border-radius: 16px;
+      background: var(--panel-paper);
+      border: 1px solid var(--panel-border);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+    }
+
+    .app-dialog-header {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      margin-bottom: 0.85rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--panel-border);
+    }
+
+    .app-dialog-title {
+      font-family: var(--font-serif);
+      font-size: 1.3rem;
+      color: var(--text-dark);
+      font-weight: 700;
+      margin: 0;
+    }
+
+    .app-dialog-icon-badge {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .app-dialog-icon-badge.info {
+      background: #EDEFFC;
+      color: var(--indigo-primary);
+      border: 1px solid #D6DAF5;
+    }
+
+    .app-dialog-icon-badge.warning {
+      background: #FEF3C7;
+      color: #92400E;
+      border: 1px solid #FDE68A;
+    }
+
+    .app-dialog-body {
+      padding: 0.35rem 0 1.25rem;
+    }
+
+    .app-dialog-message {
+      font-size: 0.95rem;
+      line-height: 1.55;
+      color: var(--text-dark);
+      margin: 0;
+      font-weight: 500;
+    }
+
+    .app-dialog-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.65rem;
+      padding-top: 0.5rem;
+    }
+
+    .app-dialog-actions button {
+      min-height: 42px;
+      padding: 0.5rem 1.35rem;
+      font-family: var(--font-sans);
+      font-size: 0.9rem;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      box-sizing: border-box;
+    }
+
+    .app-dialog-actions .btn-primary {
+      background-color: var(--indigo-primary);
+      color: #FFFFFF;
+      border: 1px solid var(--indigo-primary);
+    }
+
+    .app-dialog-actions .btn-primary:hover {
+      background-color: var(--indigo-hover);
+    }
+
+    .app-dialog-actions .btn-cancel {
+      background-color: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--panel-border);
+    }
+
+    .app-dialog-actions .btn-cancel:hover {
+      background-color: #F0EDE4;
+      color: var(--text-dark);
+    }
+
     /* ==========================================================================
        Sign In Modal
        ========================================================================== */
@@ -515,6 +673,23 @@
       .modal-title {
         font-size: 1.2rem;
       }
+
+      .app-dialog-card {
+        padding: 1.35rem 1.15rem;
+        border-radius: 14px;
+        width: calc(100vw - 2rem);
+        max-width: 390px;
+      }
+
+      .admin-scalability-wrap {
+        gap: 0.5rem;
+        margin-bottom: 0.65rem;
+      }
+
+      .btn-admin-scalability {
+        font-size: 0.72rem;
+        padding: 0.28rem 0.7rem;
+      }
     }
   </style>
 </head>
@@ -588,8 +763,31 @@
 
     </main>
 
-    <!-- Footer -->
+    <!-- Footer with Deliberate Scalability & Edge Notes -->
     <footer class="landing-footer">
+      <div class="admin-scalability-wrap">
+        <button type="button" id="btnOfflineCapture" class="btn-admin-scalability" title="Offline Capture (Field Deployment)" aria-label="Offline Field Capture Capability Note">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="1" y1="1" x2="23" y2="23"></line>
+            <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+            <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+            <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+            <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+            <line x1="12" y1="20" x2="12.01" y2="20"></line>
+          </svg>
+          <span>Offline Capture</span>
+          <span class="admin-scalability-badge" style="color: #93c5fd; background: rgba(59, 130, 246, 0.12); border-color: rgba(59, 130, 246, 0.25);">Field Edge</span>
+        </button>
+        <button type="button" id="btnAdminAccess" class="btn-admin-scalability" title="Department-Scale Administration" aria-label="Department-Scale Admin Portal Note">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <span>Admin Portal</span>
+          <span class="admin-scalability-badge">Dept-Scale</span>
+        </button>
+      </div>
       <div>Legal Metrology Act, 2009 &amp; Packaged Commodities Rules, 2011</div>
     </footer>
 
@@ -736,6 +934,30 @@
         e.preventDefault();
         openSignInModal('officer');
       });
+
+      // Offline Capture: Non-functional deliberate edge-inspection note
+      const btnOfflineCapture = document.getElementById('btnOfflineCapture');
+      if (btnOfflineCapture) {
+        btnOfflineCapture.addEventListener('click', (e) => {
+          e.preventDefault();
+          showAlert(
+            'Offline Capture — planned for field deployment, where inspectors can capture labels without connectivity and sync automatically once online.',
+            'Offline Capture'
+          );
+        });
+      }
+
+      // Admin Portal: Non-functional deliberate scalability note
+      const btnAdminAccess = document.getElementById('btnAdminAccess');
+      if (btnAdminAccess) {
+        btnAdminAccess.addEventListener('click', (e) => {
+          e.preventDefault();
+          showAlert(
+            'Admin Portal — reserved for department-scale deployment',
+            'Admin Portal'
+          );
+        });
+      }
 
       // Close handlers
       btnCloseModal.addEventListener('click', closeSignInModal);

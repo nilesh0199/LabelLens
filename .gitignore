@@ -31,3 +31,4 @@ backend/uploads/
 .idea/
 .DS_Store
 Thumbs.db
+*.pdf

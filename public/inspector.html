@@ -164,6 +164,29 @@
            =================================================================== -->
       <section class="tab-pane hidden" id="paneBatch" role="tabpanel" aria-labelledby="tabNavBatch">
         
+        <!-- Destination Reviewing Officer Banner -->
+        <div class="card destination-officer-card" id="destinationOfficerCard" style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1.25rem; margin-bottom: 0.75rem; background: #FFFFFF; border: 1px solid var(--border); border-left: 4px solid #1E3A8A; border-radius: var(--radius-md);">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <div style="width: 36px; height: 36px; border-radius: 50%; background: #EFF6FF; display: flex; align-items: center; justify-content: center; color: #1D4ED8; font-size: 1.1rem; flex-shrink: 0; border: 1px solid #DBEAFE;">
+              🏛️
+            </div>
+            <div>
+              <div style="font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: #64748B;">
+                Reviewing Officer • Destination Queue
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                <span id="batchTabOfficerName" style="font-size: 0.95rem; font-weight: 700; color: #0F172A;">Dr. S. K. Sharma</span>
+                <span id="batchTabOfficerTitle" style="font-size: 0.8rem; color: #475569;">• Assistant Controller (Legal Metrology, Delhi Zone)</span>
+              </div>
+            </div>
+          </div>
+          <div style="text-align: right;">
+            <span class="status-pill" id="batchTabOfficerBadge" style="background: #F1F5F9; color: #334155; border: 1px solid #CBD5E1; font-size: 0.72rem; font-weight: 600; padding: 0.25rem 0.6rem; border-radius: 4px;">
+              AD-CTRL-DL-02
+            </span>
+          </div>
+        </div>
+
         <!-- Batch Stats Card (Active Batch Only by default) -->
         <div class="card batch-management-card">
           <div class="card-header batch-stats-header-row">
@@ -172,6 +195,7 @@
                 <span class="summary-pill" id="batchTabBatchId">BATCH-2026-01</span>
                 <span class="history-status-tag pending_review" id="batchTabStatusBadge" style="background:#ECFDF5; color:#047857; border-color:#A7F3D0;">Active Session</span>
                 <button type="button" class="btn-switch-batch" id="btnSwitchBatch" title="Switch to another draft or submitted batch">Switch Batch ⇄</button>
+                <button type="button" class="btn-delete-active-batch hidden" id="btnDeleteActiveBatch" title="Delete this draft batch" style="background:#FEE2E2; color:#DC2626; border:1px solid #FECACA; border-radius:6px; font-size:0.75rem; font-weight:600; padding:0.25rem 0.6rem; cursor:pointer;">Delete Draft 🗑️</button>
               </div>
               <h3 class="card-title" id="batchTabStoreName" style="margin-top: 0.25rem;">Modern Bazaar • Sector 18</h3>
               <span class="batch-kicker">Compliance Breakdown</span>
@@ -240,6 +264,41 @@
             <button type="button" class="btn-primary btn-submit-batch" id="btnSubmitBatch" disabled>
               Submit Batch for Review →
             </button>
+          </div>
+        </div>
+
+        <!-- ===================================================================
+             RECAPTURE SECTION (Completely Isolated from Active Batch)
+             =================================================================== -->
+        <div class="card recapture-section-card hidden" id="recaptureSectionCard" style="margin-top: 1.5rem; border: 2px solid #FDE68A; background: #FFFDF5;">
+          <div class="card-header recapture-header-flex" style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem; padding-bottom: 0.75rem; border-bottom: 1px solid #FEF3C7;">
+            <div>
+              <div style="display:flex; align-items:center; gap:0.5rem;">
+                <span style="font-size:1.25rem;">↺</span>
+                <h3 class="card-title" style="margin:0; font-size:1.1rem; color:#92400E;">Returned Specimen Recaptures</h3>
+                <span class="recapture-count-badge" id="recaptureSectionCountBadge" style="background:#FEF3C7; color:#B45309; border:1px solid #FCD34D; font-size:0.75rem; font-weight:700; padding:2px 8px; border-radius:12px;">0</span>
+              </div>
+              <p class="card-description" style="margin:4px 0 0; color:#78350F; font-size:0.85rem;">
+                Specimens flagged for photo retake across all inspection batches. Resolving recaptures does not alter parent batch status.
+              </p>
+            </div>
+            <div class="recapture-header-actions" id="recaptureHeaderActions" style="display:flex; align-items:center; gap:0.75rem;">
+              <button type="button" class="btn-primary btn-resubmit-selected" id="btnResubmitSelectedRecaptures" disabled style="font-size:0.85rem; padding:0.45rem 0.9rem; background:#D97706; border-color:#B45309;">
+                Resubmit Selected (0) →
+              </button>
+            </div>
+          </div>
+
+          <!-- Select All Row -->
+          <div id="recaptureSelectAllRow" class="recapture-select-all-row" style="display:none; padding:0.5rem 0; border-bottom:1px dashed #FDE68A; font-size:0.8rem; color:#92400E; align-items:center; gap:0.5rem;">
+            <label style="display:flex; align-items:center; gap:0.4rem; cursor:pointer; font-weight:600;">
+              <input type="checkbox" id="chkRecaptureSelectAll" style="accent-color:#D97706; cursor:pointer;" />
+              Select all ready recaptures
+            </label>
+          </div>
+
+          <div class="recapture-items-container" id="recaptureItemsList" style="display:flex; flex-direction:column; gap:0.85rem; margin-top:0.75rem;">
+            <!-- Populated via JS -->
           </div>
         </div>
 
@@ -406,6 +465,44 @@
       <input type="file" id="inputGalleryMulti" multiple accept="image/*" class="hidden" />
     </div>
   </div>
+
+  <!-- =====================================================================
+       PHOTO REPLACE & RECAPTURE OPTIONS MODAL (Camera vs Gallery Choice)
+       ===================================================================== -->
+  <div class="modal-backdrop hidden" id="photoReplaceOptionsModal" role="dialog" aria-modal="true" aria-labelledby="photoReplaceModalTitle">
+    <div class="action-sheet-card">
+      <div class="sheet-header">
+        <h3 class="sheet-title" id="photoReplaceModalTitle">Replace Specimen Photo</h3>
+        <button type="button" class="sheet-close" id="btnClosePhotoReplaceModal" aria-label="Close">✕</button>
+      </div>
+      
+      <p class="sheet-sub" id="photoReplaceModalSubtitle">Choose capture method. You will review and confirm before replacing.</p>
+
+      <div class="sheet-options-grid">
+        <!-- Option 1: Live Camera -->
+        <button type="button" class="sheet-option-btn option-camera" id="btnReplaceChooseCamera">
+          <div class="option-icon">📸</div>
+          <div class="option-text">
+            <strong>Take Photo</strong>
+            <small>Capture single photo with live camera and review before confirming</small>
+          </div>
+        </button>
+
+        <!-- Option 2: Choose from Gallery -->
+        <button type="button" class="sheet-option-btn option-gallery" id="btnReplaceChooseGallery">
+          <div class="option-icon">🖼️</div>
+          <div class="option-text">
+            <strong>Choose from Gallery</strong>
+            <small>Select a photo from device and review before confirming</small>
+          </div>
+        </button>
+      </div>
+
+      <!-- Hidden Single File Input for Photo Replacement -->
+      <input type="file" id="inputReplacePhotoSingle" accept="image/*" class="hidden" />
+    </div>
+  </div>
+
 
   <!-- =====================================================================
        SWAP PHOTO MODAL

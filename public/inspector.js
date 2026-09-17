@@ -9,6 +9,14 @@ document.addEventListener('DOMContentLoaded', async () => {
     ? 'http://localhost:3000'
     : (window.__LABEL_LENS_API__ || '');
 
+  function formatPhotoUrl(url) {
+    if (!url) return '';
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:') || url.startsWith('blob:')) {
+      return url;
+    }
+    return API_BASE_URL + (url.startsWith('/') ? url : '/' + url);
+  }
+
   // Persistent Header Elements
   const headerInspectorName = document.getElementById('headerInspectorName');
   const headerInspectorBadge = document.getElementById('headerInspectorBadge');
@@ -43,6 +51,36 @@ document.addEventListener('DOMContentLoaded', async () => {
   const batchTabBatchId = document.getElementById('batchTabBatchId');
   const batchTabStoreName = document.getElementById('batchTabStoreName');
   const batchTabStatusBadge = document.getElementById('batchTabStatusBadge');
+
+  // Destination Reviewing Officer Elements
+  const batchTabOfficerName = document.getElementById('batchTabOfficerName');
+  const batchTabOfficerTitle = document.getElementById('batchTabOfficerTitle');
+  const batchTabOfficerBadge = document.getElementById('batchTabOfficerBadge');
+
+  function renderDestinationOfficer(officerData = null) {
+    let officer = officerData;
+    if (!officer) {
+      const badge = (user?.badge_number || user?.username || '').toUpperCase();
+      const juris = (user?.jurisdiction || '').toUpperCase();
+      if (badge.includes('MH') || juris.includes('MUMBAI') || juris.includes('MAHARASHTRA')) {
+        officer = {
+          officer_name: 'Smt. Anita Desai',
+          officer_title: 'Deputy Controller (Legal Metrology, Mumbai Zone)',
+          badge_number: 'AD-CTRL-MH-01'
+        };
+      } else {
+        officer = {
+          officer_name: 'Dr. S. K. Sharma',
+          officer_title: 'Assistant Controller (Legal Metrology, Delhi Zone)',
+          badge_number: 'AD-CTRL-DL-02'
+        };
+      }
+    }
+    if (batchTabOfficerName) batchTabOfficerName.textContent = officer.officer_name;
+    if (batchTabOfficerTitle) batchTabOfficerTitle.textContent = `• ${officer.officer_title}`;
+    if (batchTabOfficerBadge) batchTabOfficerBadge.textContent = officer.badge_number;
+  }
+  renderDestinationOfficer();
 
   // Capture Trigger & Modals
   const btnUploadLabel = document.getElementById('btnUploadLabel');
@@ -120,6 +158,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Switch Batch Modal Elements
   const btnSwitchBatch = document.getElementById('btnSwitchBatch');
+  const btnDeleteActiveBatch = document.getElementById('btnDeleteActiveBatch');
   const switchBatchModal = document.getElementById('switchBatchModal');
   const btnCloseSwitchBatchModal = document.getElementById('btnCloseSwitchBatchModal');
   const switchDraftsList = document.getElementById('switchDraftsList');
@@ -127,7 +166,25 @@ document.addEventListener('DOMContentLoaded', async () => {
   const switchDraftsCount = document.getElementById('switchDraftsCount');
   const switchSubmittedCount = document.getElementById('switchSubmittedCount');
 
+  // Recapture Section in Batch Tab Elements
+  const recaptureSectionCard = document.getElementById('recaptureSectionCard');
+  const recaptureSectionCountBadge = document.getElementById('recaptureSectionCountBadge');
+  const btnResubmitSelectedRecaptures = document.getElementById('btnResubmitSelectedRecaptures');
+  const chkRecaptureSelectAll = document.getElementById('chkRecaptureSelectAll');
+  const recaptureSelectAllRow = document.getElementById('recaptureSelectAllRow');
+  const recaptureItemsList = document.getElementById('recaptureItemsList');
+
+  // Photo Replacement Options Modal Elements
+  const photoReplaceOptionsModal = document.getElementById('photoReplaceOptionsModal');
+  const photoReplaceModalTitle = document.getElementById('photoReplaceModalTitle');
+  const photoReplaceModalSubtitle = document.getElementById('photoReplaceModalSubtitle');
+  const btnClosePhotoReplaceModal = document.getElementById('btnClosePhotoReplaceModal');
+  const btnReplaceChooseCamera = document.getElementById('btnReplaceChooseCamera');
+  const btnReplaceChooseGallery = document.getElementById('btnReplaceChooseGallery');
+  const inputReplacePhotoSingle = document.getElementById('inputReplacePhotoSingle');
+
   // In-App Confirm & Alert Modal Elements
+
   const appConfirmModal = document.getElementById('appConfirmModal');
   const appConfirmTitle = document.getElementById('appConfirmTitle');
   const appConfirmMessage = document.getElementById('appConfirmMessage');
@@ -249,11 +306,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   let activeRecaptures = [];
   let currentRecapturingItemId = null;
   let expandedItemId = null;
+  let expandedRecaptureItemId = null;
   let expandedHistoryItemId = null;
   let currentHistoryBatchItems = [];
   let stagedEdits = {}; // itemId -> { product_name, product_category, photos: [], declarations_found: [], declarations_missing: [], declaration_values: {} }
   let stagedBackgroundFiles = {}; // itemId -> { front, back, side, extras: [] }
-  let photoReplacingTarget = null; // { itemId, photoIdx }
+  let currentReplacementTarget = null; // { itemId, photoIdx, angle, isRecapture, item }
   let activeLightboxItem = null;
   let activeLightboxPhotoIdx = null;
 
@@ -400,6 +458,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     blurBadgeEl: cameraBlurBadge,
     skipBtnEl: btnCameraSkip,
     onPhotoAccepted: (angleId, file, dataUrl) => {
+      if (currentReplacementTarget) {
+        commitPhotoReplacement(currentReplacementTarget, file, dataUrl);
+        return;
+      }
       if (angleId === 'front') {
         currentItemCapture.front = { file, dataUrl };
       } else if (angleId === 'back') {
@@ -526,6 +588,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       // 1. Upload & OCR inspect in background
       const formData = new FormData();
+      if (item && item.item_id) {
+        formData.append('item_id', item.item_id);
+      }
       formData.append('photo_front', capturedFiles.front);
       if (capturedFiles.back) formData.append('photo_back', capturedFiles.back);
       if (capturedFiles.side) formData.append('photo_side', capturedFiles.side);
@@ -811,7 +876,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const res = await fetch(`${API_BASE_URL}/api/batches?inspector_id=${encodeURIComponent(inspectorId)}`);
         if (res.ok) {
           const allBatches = await res.json();
-          const drafts = allBatches.filter(b => b.status === 'draft');
+          let drafts = [];
+          if (Array.isArray(allBatches)) {
+            drafts = allBatches.filter(b => b.status === 'draft');
+          } else if (allBatches && typeof allBatches === 'object') {
+            drafts = allBatches.drafts || [];
+          }
           if (drafts.length > 0 && cameraDraftsNotice && cameraDraftsList) {
             cameraDraftsNotice.classList.remove('hidden');
             cameraDraftsList.innerHTML = '';
@@ -831,14 +901,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                   <h4 class="switch-batch-store">${escapeHtml(db.store_name || 'Retail Store')}</h4>
                   <span class="switch-batch-meta">${escapeHtml(db.store_location || 'Jurisdiction')} • ${count} item(s) • ${dateStr}</span>
                 </div>
-                <button type="button" class="btn-resume-draft" data-batch-id="${db.batch_id}">
-                  Resume Batch →
-                </button>
+                <div class="switch-batch-actions" style="display:flex; gap:0.5rem; align-items:center;">
+                  <button type="button" class="btn-delete-draft" data-batch-id="${db.batch_id}" style="min-height: 38px; font-size: 0.78rem; padding: 0 0.75rem; border-radius: 6px; background: #FEE2E2; color: #DC2626; border: 1px solid #FECACA; cursor: pointer; font-weight: 600;">
+                    Delete
+                  </button>
+                  <button type="button" class="btn-resume-draft" data-batch-id="${db.batch_id}">
+                    Resume Batch →
+                  </button>
+                </div>
               `;
 
               card.querySelector('.btn-resume-draft').addEventListener('click', async (e) => {
                 e.stopPropagation();
                 await resumeDraftBatch(db.batch_id);
+              });
+
+              card.querySelector('.btn-delete-draft').addEventListener('click', async (e) => {
+                e.stopPropagation();
+                await handleDeleteDraftBatch(db.batch_id, db);
+                await updateCameraTabEmptyState();
               });
 
               cameraDraftsList.appendChild(card);
@@ -864,8 +945,66 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (switchBatchModal) switchBatchModal.classList.add('hidden');
   }
 
+  async function handleDeleteDraftBatch(batchId, batchInfo) {
+    const count = batchInfo ? (batchInfo.item_count ?? (batchInfo.items ? batchInfo.items.length : 0)) : 0;
+    const storeName = batchInfo ? (batchInfo.store_name || 'Retail Store') : 'Retail Store';
+    let confirmed = false;
+
+    if (count > 0) {
+      confirmed = await showConfirm(
+        `Warning: Draft batch ${batchId} for "${storeName}" contains ${count} captured specimen item(s) that will be permanently lost along with all photos and analysis data.\n\nAre you sure you want to permanently delete this batch?`,
+        'Delete Draft Batch',
+        'Delete Batch',
+        'Cancel'
+      );
+    } else {
+      const dateStr = batchInfo && batchInfo.created_at
+        ? new Date(batchInfo.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+        : 'Recent';
+      confirmed = await showConfirm(
+        `Delete empty draft batch for store "${storeName}" (Created: ${dateStr})?\n\nThis batch has 0 items and will be permanently removed.`,
+        'Delete Empty Draft',
+        'Delete Draft',
+        'Cancel'
+      );
+    }
+
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/batches/${encodeURIComponent(batchId)}`, {
+        method: 'DELETE'
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Failed to delete batch (${res.status})`);
+      }
+
+      // If active batch was deleted, reset active session
+      if (activeBatch && activeBatch.batch_id === batchId) {
+        sessionStorage.removeItem('labelLens_active_batch_id');
+        activeBatch = null;
+        await checkActiveBatchSession();
+      }
+
+      // Re-render switch batch modal if open
+      await renderSwitchBatchModalContent();
+
+      await showAlert(`Draft batch [${batchId}] was permanently deleted.`, 'Batch Deleted');
+    } catch (err) {
+      await showAlert(`Could not delete batch: ${err.message}`, 'Delete Error');
+    }
+  }
+
   if (btnSwitchBatch) btnSwitchBatch.addEventListener('click', openSwitchBatchModal);
   if (btnCloseSwitchBatchModal) btnCloseSwitchBatchModal.addEventListener('click', closeSwitchBatchModal);
+  if (btnDeleteActiveBatch) {
+    btnDeleteActiveBatch.addEventListener('click', async () => {
+      if (!activeBatch || activeBatch.status !== 'draft') return;
+      await handleDeleteDraftBatch(activeBatch.batch_id, activeBatch);
+    });
+  }
   if (switchBatchModal) {
     switchBatchModal.addEventListener('click', (e) => {
       if (e.target === switchBatchModal) closeSwitchBatchModal();
@@ -884,8 +1023,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       const allBatches = await res.json();
 
       const activeId = activeBatch ? activeBatch.batch_id : null;
-      const drafts = allBatches.filter(b => b.status === 'draft' && b.batch_id !== activeId);
-      const submitted = allBatches.filter(b => b.status !== 'draft');
+      let drafts = [];
+      let submitted = [];
+      if (Array.isArray(allBatches)) {
+        drafts = allBatches.filter(b => b.status === 'draft' && b.batch_id !== activeId);
+        submitted = allBatches.filter(b => b.status !== 'draft');
+      } else if (allBatches && typeof allBatches === 'object') {
+        drafts = (allBatches.drafts || []).filter(b => b.batch_id !== activeId);
+        submitted = allBatches.submitted || [];
+      }
 
       if (switchDraftsCount) switchDraftsCount.textContent = drafts.length;
       if (switchSubmittedCount) switchSubmittedCount.textContent = submitted.length;
@@ -910,15 +1056,25 @@ document.addEventListener('DOMContentLoaded', async () => {
               <h4 class="switch-batch-store">${escapeHtml(db.store_name || 'Retail Store')}</h4>
               <span class="switch-batch-meta">${escapeHtml(db.store_location || 'Jurisdiction')} • ${count} item(s) • ${dateStr}</span>
             </div>
-            <button type="button" class="btn-resume-draft" data-batch-id="${db.batch_id}">
-              Resume Batch →
-            </button>
+            <div class="switch-batch-actions" style="display:flex; gap:0.5rem; align-items:center;">
+              <button type="button" class="btn-delete-draft" data-batch-id="${db.batch_id}" style="min-height: 38px; font-size: 0.78rem; padding: 0 0.75rem; border-radius: 6px; background: #FEE2E2; color: #DC2626; border: 1px solid #FECACA; cursor: pointer; font-weight: 600;">
+                Delete
+              </button>
+              <button type="button" class="btn-resume-draft" data-batch-id="${db.batch_id}">
+                Resume Batch →
+              </button>
+            </div>
           `;
 
           card.querySelector('.btn-resume-draft').addEventListener('click', async (e) => {
             e.stopPropagation();
             closeSwitchBatchModal();
             await resumeDraftBatch(db.batch_id);
+          });
+
+          card.querySelector('.btn-delete-draft').addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await handleDeleteDraftBatch(db.batch_id, db);
           });
 
           switchDraftsList.appendChild(card);
@@ -987,6 +1143,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         batchTabStatusBadge.style.color = '#047857';
         batchTabStatusBadge.style.borderColor = '#A7F3D0';
       }
+      if (btnDeleteActiveBatch) btnDeleteActiveBatch.classList.remove('hidden');
 
       const count = (activeBatch.items || []).length;
       if (summaryItemCount) summaryItemCount.textContent = `${count} / 15`;
@@ -1024,6 +1181,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/batches/${activeBatch.batch_id}/submit`, { method: 'POST' });
       if (!res.ok) throw new Error('Submission failed');
+      if (btnDeleteActiveBatch) btnDeleteActiveBatch.classList.add('hidden');
       await showAlert('Batch Submitted', `✓ Batch [${activeBatch.batch_id}] submitted to jurisdictional review queue!`, 'success');
       await loadInspectorDashboard();
       switchTab('history');
@@ -1036,20 +1194,26 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 6. "NEEDS HUMAN REVIEW" LOGIC & ITEM LIST RENDERING
   // =========================================================================
   function isSingleUnitPackage(item) {
-    if (!item) return false;
-    if (item.is_single_unit === true || item.single_unit === true) return true;
+    if (!item) return true;
+    if (item.pack_type === 'Single-unit' || item.pack_type === 'single-unit' || item.is_single_unit === true || item.single_unit === true) return true;
+    if (item.pack_type === 'Multi-unit' || item.pack_type === 'multi-unit') return false;
 
     const declVals = item.declaration_values || {};
     const netQty = (declVals.net_quantity || '').toLowerCase().trim();
-    if (/^1\s*(?:n|u|piece|pc|unit|item|number|count|nos|no|pk|pack)?$/i.test(netQty)) return true;
-    if (/\b1\s*(?:n|u|piece|pc|unit|item|number|count|nos|no)\b/i.test(netQty)) return true;
+    const prodName = (item.product_name || '').toLowerCase();
+    const text = ((item.cleaned_summary || '') + ' ' + (item.raw_ocr_text || '') + ' ' + prodName + ' ' + netQty).toLowerCase();
 
-    const text = ((item.cleaned_summary || '') + ' ' + (item.raw_ocr_text || '') + ' ' + (item.product_name || '')).toLowerCase();
-    if (/\b(?:net\s*(?:qty|quantity|count)?\s*[:.]?\s*1\s*(?:n|u|piece|pc|unit|item|number|nos|no))\b/i.test(text)) return true;
-    if (/\b(?:contains?|quantity|qty)\s*[:.]?\s*1\s*(?:n|u|piece|pc|unit|item|number|nos|no)\b/i.test(text)) return true;
-    if (/\b(?:single\s*unit|single\s*piece|1\s*unit\s*pack|single\s*item)\b/i.test(text)) return true;
+    // Multi-pack patterns (Rule 6(1)(i) USP requirement is ONLY for genuine multi-packs)
+    if (/\b(?:pack|bundle|set|combo|box|case|bag)\s*of\s*([2-9]|[1-9][0-9]+)\b/i.test(text)) return false;
+    if (/\b(?:multipack|multi-pack|twin\s*pack|triple\s*pack|duo\s*pack|combo\s*pack)\b/i.test(text)) return false;
+    if (/\b([2-9]|[1-9][0-9]+)\s*[x×*]\s*[0-9]+/i.test(text)) return false;
+    if (/\b[0-9.]+\s*(?:g|kg|ml|l|ltr|gm|grams)?\s*[x×*]\s*([2-9]|[1-9][0-9]+)\b/i.test(netQty) ||
+        /\b([2-9]|[1-9][0-9]+)\s*[x×*]\s*[0-9.]+\s*(?:g|kg|ml|l|ltr|gm|grams)\b/i.test(netQty)) return false;
+    if (/\b([2-9]|[1-9][0-9]+)\s*(?:units|pieces|pcs|items|bars|bottles|cans|pouches|sachets|tins|tubes|packs|packets)\b/i.test(netQty) ||
+        /\b(?:contains|includes|consists\s*of)\s*([2-9]|[1-9][0-9]+)\s*(?:units|pieces|pcs|items|bars|bottles|cans|pouches|sachets|tins|tubes|packs|packets)\b/i.test(text)) return false;
 
-    return false;
+    // Single retail package sold at one MRP is exempt from USP regardless of count, weight, or volume
+    return true;
   }
 
   function getItemReviewStatus(item) {
@@ -1075,6 +1239,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const isSingle = isSingleUnitPackage(item);
     const staged = stagedEdits[item.item_id];
     const foundKeys = new Set(staged ? staged.declarations_found : (item.declarations_found || []));
+    const isDomestic = (staged?.product_origin || item.product_origin || item.declaration_values?.product_origin || 'Domestic').toString().toLowerCase() === 'domestic';
 
     const mandatoryList = [
       { key: 'commodity_name', name: 'Commodity Name' },
@@ -1091,6 +1256,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     mandatoryList.forEach(field => {
       if (field.key === 'unit_sale_price' && isSingle) {
         // Single-unit items are exempt from Unit Sale Price (USP)
+        return;
+      }
+      if (field.key === 'country_of_origin' && isDomestic) {
+        // Domestic goods are exempt from Country of Origin under Rule 6(1)(f)
         return;
       }
       if (!foundKeys.has(field.key)) {
@@ -1110,7 +1279,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 
   function renderBatchItemList() {
+    renderRecaptureSection();
+
     const tables = [
+
       { tbody: cameraItemListTableBody, isCameraTab: true },
       { tbody: itemListTableBody, isCameraTab: false }
     ].filter(t => t.tbody);
@@ -1159,6 +1331,7 @@ document.addEventListener('DOMContentLoaded', async () => {
           stagedEdits[item.item_id] = {
             product_name: item.product_name || '',
             product_category: item.product_category || 'Packaged Commodity',
+            product_origin: item.product_origin || item.declaration_values?.product_origin || 'Domestic',
             photos: JSON.parse(JSON.stringify(item.photos || [])),
             declarations_found: [...(item.declarations_found || [])],
             declarations_missing: [...(item.declarations_missing || [])],
@@ -1177,7 +1350,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         let thumbHtml = '';
         if (photos.length > 0) {
           thumbHtml = photos.map(p => {
-            const src = p.url.startsWith('data:') ? p.url : (API_BASE_URL + p.url);
+            const src = formatPhotoUrl(p.url);
             return `<img src="${src}" class="manifest-thumb" title="${escapeHtml(p.angle || '')}" />`;
           }).join('');
         } else {
@@ -1336,7 +1509,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const photos = item.photos || [];
     let photosHtml = '';
     photos.forEach((p, pIdx) => {
-      const src = p.url.startsWith('data:') ? p.url : (API_BASE_URL + p.url);
+      const src = formatPhotoUrl(p.url);
       const angleLabel = p.angle ? p.angle.toUpperCase() : `PHOTO #${pIdx + 1}`;
       photosHtml += `
         <div class="camera-photo-thumb-card" data-idx="${pIdx}" title="Tap to enlarge full-size">
@@ -1408,9 +1581,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const btnAdd = card.querySelector('#btnCameraAddPhotoThumb');
     if (btnAdd) {
       btnAdd.addEventListener('click', () => {
-        photoReplacingTarget = { itemId: item.item_id, photoIdx: -1 };
-        inputReplacePhoto.value = '';
-        inputReplacePhoto.click();
+        openPhotoReplacement({
+          itemId: item.item_id,
+          photoIdx: -1,
+          angle: `extra_${(item.photos || []).length + 1}`,
+          isRecapture: false,
+          item
+        });
       });
     }
 
@@ -1428,7 +1605,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Photos Gallery HTML
     let photosHtml = '';
     staged.photos.forEach((p, pIdx) => {
-      const src = p.url.startsWith('data:') ? p.url : (API_BASE_URL + p.url);
+      const src = formatPhotoUrl(p.url);
       photosHtml += `
         <div class="detail-photo-card" data-idx="${pIdx}">
           <img src="${src}" alt="${p.angle || 'Photo'}" class="detail-photo-img" />
@@ -1445,10 +1622,56 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Rule 6 Declarations HTML
     let declsHtml = '';
+    const isOriginDomestic = (staged.product_origin || item.product_origin || item.declaration_values?.product_origin || 'Domestic').toString().toLowerCase() === 'domestic';
+    declsHtml += `
+      <div class="decl-editor-card decl-origin-card" style="border-left: 3.5px solid #C79A3E; background: #FFFDF8; margin-bottom: 0.75rem;">
+        <div class="decl-editor-top">
+          <div class="decl-label-box">
+            <span class="decl-title" style="font-weight: 700; color: #14163A;">Product Origin</span>
+            <span class="decl-sub-tag" style="color: #B45309;">Rule 6(1)(f) Exemption Scope</span>
+          </div>
+          <div class="decl-toggle-pill-group">
+            <button type="button" class="btn-decl-toggle ${isOriginDomestic ? 'active-present' : ''}" data-inspector-origin="Domestic" style="cursor:pointer;">
+              Domestic (India)
+            </button>
+            <button type="button" class="btn-decl-toggle ${!isOriginDomestic ? 'active-absent' : ''}" data-inspector-origin="Imported" style="cursor:pointer;">
+              Imported
+            </button>
+          </div>
+        </div>
+        <div style="font-size: 0.72rem; color: ${isOriginDomestic ? '#166534' : '#991B1B'}; margin-top: 0.35rem; font-weight: 500;">
+          ${isOriginDomestic ? '✓ Domestically manufactured — Country of Origin is exempt under Rule 6(1)(f).' : '⚠️ Imported commodity — Country of Origin is mandatory under Rule 6(1)(f).'}
+        </div>
+      </div>
+    `;
+
     RULE6_FIELDS.forEach(f => {
       const isPresent = staged.declarations_found.includes(f.key);
       let val = staged.declaration_values[f.key] || '';
       if (val === 'Extracted from label') val = '';
+
+      if (f.key === 'country_of_origin' && isOriginDomestic && (!val || !val.trim() || !isPresent)) {
+        declsHtml += `
+          <div class="decl-editor-card is-present" data-key="${f.key}" style="background: #F0FDF4; border-color: #86EFAC;">
+            <div class="decl-editor-top">
+              <div class="decl-label-box">
+                <span class="decl-title" style="color: #166534;">${f.name}</span>
+                <span class="decl-sub-tag" style="color: #15803D;">Rule 6(1)(f) • Domestic Exemption</span>
+              </div>
+              <div>
+                <span style="font-size: 0.72rem; font-weight: 600; background: #DCFCE7; color: #166534; padding: 3px 8px; border-radius: 999px; border: 1px solid #86EFAC;">
+                  N/A (Exempt — domestically manufactured)
+                </span>
+              </div>
+            </div>
+            <div class="decl-input-row">
+              <input type="text" class="decl-field-input" data-key="${f.key}" value="" placeholder="N/A (Exempt — domestically manufactured)" disabled style="background: #F8FAFC; color: #64748B;" />
+            </div>
+          </div>
+        `;
+        return;
+      }
+
       const inputPlaceholder = isPresent
         ? (val ? 'Extracted or corrected value...' : 'Not detected — enter manually')
         : 'Marked absent on package';
@@ -1555,17 +1778,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     `;
 
     // Bind events
-    card.querySelector('.btn-detail-close').addEventListener('click', () => {
-      delete stagedEdits[item.item_id];
-      expandedItemId = null;
-      renderBatchItemList();
-    });
+    const isRecapture = (activeRecaptures || []).some(r => r.item_id === item.item_id);
 
-    card.querySelector('.btn-detail-cancel').addEventListener('click', () => {
+    const closeHandler = () => {
       delete stagedEdits[item.item_id];
-      expandedItemId = null;
-      renderBatchItemList();
-    });
+      if (isRecapture) {
+        expandedRecaptureItemId = null;
+        renderRecaptureSection();
+      } else {
+        expandedItemId = null;
+        renderBatchItemList();
+      }
+    };
+
+    card.querySelector('.btn-detail-close').addEventListener('click', closeHandler);
+    card.querySelector('.btn-detail-cancel').addEventListener('click', closeHandler);
 
     card.querySelector('.input-detail-prodname').addEventListener('input', (e) => {
       staged.product_name = e.target.value;
@@ -1621,11 +1848,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Photo Replace & Remove
     card.querySelectorAll('.btn-photo-replace').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
         const pIdx = parseInt(btn.dataset.idx, 10);
-        photoReplacingTarget = { itemId: item.item_id, photoIdx: pIdx };
-        inputReplacePhoto.value = '';
-        inputReplacePhoto.click();
+        const angle = (staged.photos[pIdx] || {}).angle || 'front';
+        openPhotoReplacement({
+          itemId: item.item_id,
+          photoIdx: pIdx,
+          angle,
+          isRecapture,
+          item
+        });
       });
     });
 
@@ -1637,15 +1870,36 @@ document.addEventListener('DOMContentLoaded', async () => {
           return;
         }
         staged.photos.splice(pIdx, 1);
-        renderBatchItemList();
+        if (isRecapture) renderRecaptureSection();
+        else renderBatchItemList();
       });
     });
 
     card.querySelector('.btn-detail-add-photo').addEventListener('click', () => {
-      photoReplacingTarget = { itemId: item.item_id, photoIdx: -1 };
-      inputReplacePhoto.value = '';
-      inputReplacePhoto.click();
+      openPhotoReplacement({
+        itemId: item.item_id,
+        photoIdx: -1,
+        angle: `extra_${(staged.photos || []).length + 1}`,
+        isRecapture,
+        item
+      });
     });
+
+    // Origin toggle buttons
+    const domBtn = card.querySelector('[data-inspector-origin="Domestic"]');
+    const impBtn = card.querySelector('[data-inspector-origin="Imported"]');
+    if (domBtn && impBtn) {
+      domBtn.addEventListener('click', () => {
+        staged.product_origin = 'Domestic';
+        if (isRecapture) renderRecaptureSection();
+        else renderBatchItemList();
+      });
+      impBtn.addEventListener('click', () => {
+        staged.product_origin = 'Imported';
+        if (isRecapture) renderRecaptureSection();
+        else renderBatchItemList();
+      });
+    }
 
     card.querySelector('.btn-detail-save').addEventListener('click', async () => {
       const btnSave = card.querySelector('.btn-detail-save');
@@ -1709,18 +1963,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     const staged = stagedEdits[itemId];
     if (!staged) return;
 
-    // Recalculate Rule 6 compliance:
-    const isSingle = isSingleUnitPackage({ ...item, ...staged });
+    const isRecapture = (activeRecaptures || []).some(r => r.item_id === itemId);
+    const originalItem = (activeBatch?.items || []).find(i => i.item_id === itemId) || (activeRecaptures || []).find(r => r.item_id === itemId) || {};
+    const isSingle = isSingleUnitPackage({ ...originalItem, ...staged });
+    const isDomestic = (staged.product_origin || originalItem.product_origin || originalItem.declaration_values?.product_origin || 'Domestic').toString().toLowerCase() === 'domestic';
     const mandatoryKeys = [
       'commodity_name', 'net_quantity', 'mrp', 'manufacturing_date',
       'manufacturer_details', 'consumer_care', 'country_of_origin', 'unit_sale_price'
     ];
-    const requiredKeys = mandatoryKeys.filter(k => !(k === 'unit_sale_price' && isSingle));
+    const requiredKeys = mandatoryKeys.filter(k => {
+      if (k === 'unit_sale_price' && isSingle) return false;
+      if (k === 'country_of_origin' && isDomestic) return false;
+      return true;
+    });
     const isCompliant = requiredKeys.every(k => staged.declarations_found.includes(k));
 
     const payload = {
       product_name: staged.product_name,
       product_category: staged.product_category,
+      product_origin: staged.product_origin || (isDomestic ? 'Domestic' : 'Imported'),
       photos: staged.photos,
       declarations_found: staged.declarations_found,
       declarations_missing: staged.declarations_missing,
@@ -1737,14 +1998,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!res.ok) throw new Error('Failed to update item record');
     const updated = await res.json();
 
-    const idx = (activeBatch.items || []).findIndex(i => i.item_id === itemId);
-    if (idx !== -1) {
-      activeBatch.items[idx] = updated;
+    if (activeBatch && activeBatch.items) {
+      const idx = activeBatch.items.findIndex(i => i.item_id === itemId);
+      if (idx !== -1) {
+        activeBatch.items[idx] = updated;
+      }
+    }
+
+    if (activeRecaptures) {
+      const rIdx = activeRecaptures.findIndex(r => r.item_id === itemId);
+      if (rIdx !== -1) {
+        activeRecaptures[rIdx] = {
+          ...activeRecaptures[rIdx],
+          ...updated,
+          _recaptured: true
+        };
+      }
     }
 
     delete stagedEdits[itemId];
-    expandedItemId = null;
-    renderBatchItemList();
+    if (isRecapture) {
+      expandedRecaptureItemId = null;
+      renderRecaptureSection();
+    } else {
+      expandedItemId = null;
+      renderBatchItemList();
+    }
     await showAlert(`Item updated successfully!\n\nNew verdict: ${updated.compliant ? 'COMPLIANT' : 'NON-COMPLIANT'}`, 'Item Changes Saved');
   }
 
@@ -1759,7 +2038,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const photo = photos[photoIdx];
     if (!photo) return;
 
-    const src = photo.url.startsWith('data:') ? photo.url : (API_BASE_URL + photo.url);
+    const src = formatPhotoUrl(photo.url);
     lightboxImg.src = src;
     const angleText = photo.angle ? photo.angle.toUpperCase() : `PHOTO #${photoIdx + 1}`;
     lightboxTitle.textContent = angleText;
@@ -1790,12 +2069,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   btnLightboxReplace.addEventListener('click', () => {
     if (!activeLightboxItem || activeLightboxPhotoIdx === null) return;
-    photoReplacingTarget = {
-      itemId: activeLightboxItem.item_id,
-      photoIdx: activeLightboxPhotoIdx
-    };
-    inputReplacePhoto.value = '';
-    inputReplacePhoto.click();
+    const item = activeLightboxItem;
+    const pIdx = activeLightboxPhotoIdx;
+    const angle = (item.photos[pIdx] || {}).angle || 'front';
+    closePhotoLightbox();
+    openPhotoReplacement({
+      itemId: item.item_id,
+      photoIdx: pIdx,
+      angle,
+      isRecapture: false,
+      item
+    });
   });
 
   btnLightboxRemove.addEventListener('click', async () => {
@@ -1828,53 +2112,519 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  // Photo replacement file input listener
-  if (inputReplacePhoto) {
-    inputReplacePhoto.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file || !photoReplacingTarget) return;
+  // =========================================================================
+  // UNIFIED PHOTO REPLACEMENT & RECAPTURE CONTROLLER
+  // =========================================================================
+  function openPhotoReplacement(target) {
+    currentReplacementTarget = target;
+    const isRecapture = !!target.isRecapture;
+    const angle = (target.angle || 'front').toUpperCase();
+    const productName = target.item?.product_name || target.itemId;
 
-      const dataUrl = await readFileDataUrl(file);
-      const { itemId, photoIdx } = photoReplacingTarget;
-      const item = (activeBatch.items || []).find(i => i.item_id === itemId);
+    if (photoReplaceModalTitle) {
+      photoReplaceModalTitle.textContent = isRecapture ? 'Recapture Specimen Photo' : 'Replace Specimen Photo';
+    }
+    if (photoReplaceModalSubtitle) {
+      photoReplaceModalSubtitle.textContent = `Product: ${productName} • Angle: ${angle}. Choose how to capture.`;
+    }
 
-      if (item) {
-        if (photoIdx >= 0 && photoIdx < item.photos.length) {
-          item.photos[photoIdx].url = dataUrl;
-        } else if (photoIdx === -1) {
-          item.photos.push({
-            angle: `extra_${item.photos.length + 1}`,
-            url: dataUrl
-          });
-        }
+    if (photoReplaceOptionsModal) {
+      photoReplaceOptionsModal.classList.remove('hidden');
+    }
+  }
 
-        if (stagedEdits[itemId]) {
-          stagedEdits[itemId].photos = JSON.parse(JSON.stringify(item.photos));
-        }
-
-        // If lightbox is open for this photo, update it
-        if (activeLightboxItem && activeLightboxItem.item_id === itemId && activeLightboxPhotoIdx === photoIdx) {
-          lightboxImg.src = dataUrl;
-        }
-
-        renderBatchItemList();
-
-        // Persist photo replacement if committed
-        if (item.analysis_status !== 'analyzing') {
-          try {
-            await fetch(`${API_BASE_URL}/api/inspector/items/${itemId}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ photos: item.photos })
-            });
-          } catch (err) {
-            console.warn('Backend photo update sync skipped:', err);
-          }
-        }
-      }
-      photoReplacingTarget = null;
+  if (btnClosePhotoReplaceModal) {
+    btnClosePhotoReplaceModal.addEventListener('click', () => {
+      if (photoReplaceOptionsModal) photoReplaceOptionsModal.classList.add('hidden');
+      currentReplacementTarget = null;
     });
   }
+
+  if (photoReplaceOptionsModal) {
+    photoReplaceOptionsModal.addEventListener('click', (e) => {
+      if (e.target === photoReplaceOptionsModal) {
+        photoReplaceOptionsModal.classList.add('hidden');
+        currentReplacementTarget = null;
+      }
+    });
+  }
+
+  if (btnReplaceChooseCamera) {
+    btnReplaceChooseCamera.addEventListener('click', () => {
+      if (!currentReplacementTarget) return;
+      if (photoReplaceOptionsModal) photoReplaceOptionsModal.classList.add('hidden');
+      const angle = currentReplacementTarget.angle || 'front';
+      // Start camera in single slot mode:
+      cameraEngine.start(angle, true /* isSingleSlot */);
+    });
+  }
+
+  if (btnReplaceChooseGallery) {
+    btnReplaceChooseGallery.addEventListener('click', () => {
+      if (!currentReplacementTarget) return;
+      if (photoReplaceOptionsModal) photoReplaceOptionsModal.classList.add('hidden');
+      if (inputReplacePhotoSingle) {
+        inputReplacePhotoSingle.value = '';
+        inputReplacePhotoSingle.click();
+      }
+    });
+  }
+
+  if (inputReplacePhotoSingle) {
+    inputReplacePhotoSingle.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file || !currentReplacementTarget) return;
+
+      const dataUrl = await readFileDataUrl(file);
+      const target = currentReplacementTarget;
+      const angle = (target.angle || 'front').toUpperCase();
+
+      // Show Confirm step using camera review screen!
+      cameraEngine.showReviewForImage(
+        file,
+        dataUrl,
+        `Review Replacement Photo: ${angle}`,
+        (acceptedFile, acceptedDataUrl) => {
+          commitPhotoReplacement(target, acceptedFile, acceptedDataUrl);
+        },
+        () => {
+          // On Retake: re-trigger file picker
+          if (inputReplacePhotoSingle) {
+            inputReplacePhotoSingle.value = '';
+            inputReplacePhotoSingle.click();
+          }
+        }
+      );
+    });
+  }
+
+  async function commitPhotoReplacement(target, file, dataUrl) {
+    const item = target.item;
+    if (!item) return;
+
+    if (!item.photos) item.photos = [];
+    const photoIdx = target.photoIdx;
+    const angle = target.angle || 'front';
+
+    if (photoIdx >= 0 && photoIdx < item.photos.length) {
+      item.photos[photoIdx].url = dataUrl;
+      item.photos[photoIdx].file = file;
+    } else {
+      item.photos.push({
+        angle,
+        url: dataUrl,
+        file
+      });
+    }
+
+    if (stagedEdits[target.itemId]) {
+      stagedEdits[target.itemId].photos = JSON.parse(JSON.stringify(item.photos));
+    }
+
+    if (target.isRecapture) {
+      item._recaptured = true;
+      item._recapturedFile = file;
+      switchTab('batch');
+    }
+
+    item.analysis_status = 'analyzing';
+    renderBatchItemList();
+    renderAlertsTab();
+
+    currentReplacementTarget = null;
+
+    // Launch background re-analysis and DB update
+    executePhotoReplaceAnalysis(item, photoIdx, file, target.isRecapture);
+  }
+
+  async function executePhotoReplaceAnalysis(item, photoIdx, file, isRecapture) {
+    try {
+      const formData = new FormData();
+      formData.append('item_id', item.item_id);
+
+      const angle = (photoIdx >= 0 && item.photos[photoIdx]?.angle) ? item.photos[photoIdx].angle : 'front';
+      if (file) {
+        formData.append(`photo_${angle}`, file);
+      }
+
+      const inspectRes = await fetch(`${API_BASE_URL}/api/inspector/inspect-item`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!inspectRes.ok) {
+        throw new Error(`Inspection HTTP ${inspectRes.status}`);
+      }
+
+      const analysisData = await inspectRes.json();
+
+      // Update item with newly extracted data and verdict
+      item.photos = analysisData.photos || item.photos;
+      item.product_name = analysisData.product_name || item.product_name;
+      item.product_category = analysisData.product_category || item.product_category;
+      item.compliant = analysisData.compliant;
+      item.confidence = analysisData.confidence || 0.9;
+      item.declarations_found = analysisData.declarations_found || [];
+      item.declarations_missing = analysisData.declarations_missing || [];
+      item.declaration_values = analysisData.declaration_values || {};
+      item.raw_ocr_text = analysisData.raw_ocr_text || '';
+      item.cleaned_summary = analysisData.cleaned_summary || '';
+      item.analysis_status = 'completed';
+
+      // Persist to database
+      const putPayload = {
+        product_name: item.product_name,
+        product_category: item.product_category,
+        photos: item.photos,
+        compliant: item.compliant,
+        confidence: item.confidence,
+        declarations_found: item.declarations_found,
+        declarations_missing: item.declarations_missing,
+        declaration_values: item.declaration_values,
+        raw_ocr_text: item.raw_ocr_text,
+        cleaned_summary: item.cleaned_summary
+      };
+
+      await fetch(`${API_BASE_URL}/api/inspector/items/${item.item_id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(putPayload)
+      });
+
+      if (isRecapture || (activeRecaptures || []).some(r => r.item_id === item.item_id)) {
+        item._recaptured = true;
+        expandedRecaptureItemId = item.item_id;
+        delete stagedEdits[item.item_id];
+        renderRecaptureSection();
+      } else {
+        renderBatchItemList();
+      }
+      renderAlertsTab();
+
+      await showAlert(
+        `✓ Specimen ${item.item_id} re-analyzed successfully!\n\nNew statutory compliance verdict: ${item.compliant ? 'COMPLIANT' : 'NON-COMPLIANT'}\n\nYou can now inspect the statutory declarations and edit any values below before sending to the officer.`,
+        'Photo Analysis Complete'
+      );
+    } catch (err) {
+      console.error(`Photo replacement analysis failed for ${item.item_id}:`, err);
+      item.analysis_status = 'failed';
+      if (isRecapture || (activeRecaptures || []).some(r => r.item_id === item.item_id)) {
+        renderRecaptureSection();
+      } else {
+        renderBatchItemList();
+      }
+      renderAlertsTab();
+    }
+  }
+
+  // =========================================================================
+  // RECAPTURE SECTION IN BATCH TAB (Isolated from active batch)
+  // =========================================================================
+  function renderRecaptureSection() {
+    if (!recaptureSectionCard) return;
+
+    const recaptures = activeRecaptures || [];
+    if (recaptures.length === 0) {
+      recaptureSectionCard.classList.add('hidden');
+      return;
+    }
+
+    recaptureSectionCard.classList.remove('hidden');
+    if (recaptureSectionCountBadge) {
+      recaptureSectionCountBadge.textContent = recaptures.length;
+    }
+
+    const readyItems = recaptures.filter(i => i._recaptured === true);
+
+    if (recaptureSelectAllRow) {
+      if (readyItems.length > 0) {
+        recaptureSelectAllRow.style.display = 'flex';
+      } else {
+        recaptureSelectAllRow.style.display = 'none';
+      }
+    }
+
+    updateResubmitSelectedBtnState();
+
+    if (!recaptureItemsList) return;
+    recaptureItemsList.innerHTML = '';
+
+    recaptures.forEach((item) => {
+      const isAnalyzing = item.analysis_status === 'analyzing';
+      const isReady = item._recaptured === true && !isAnalyzing;
+
+      const card = document.createElement('div');
+      card.className = 'recapture-item-row-card';
+      card.dataset.itemId = item.item_id;
+      card.style.cssText = `
+        background: #FFFFFF;
+        border: 1px solid ${isReady ? '#A7F3D0' : '#FDE68A'};
+        border-radius: 8px;
+        padding: 0.85rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      `;
+
+      let photosHtml = '';
+      const photos = item.photos || [];
+      if (photos.length > 0) {
+        photosHtml = photos.map((p, idx) => {
+          const src = formatPhotoUrl(p.url);
+          return `<img src="${src}" style="width:48px; height:48px; object-fit:cover; border-radius:6px; border:1px solid #E4E4E7;" title="${p.angle || 'Photo'}" />`;
+        }).join('');
+      } else {
+        photosHtml = '<div style="width:48px; height:48px; background:#F4F4F5; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:0.65rem; color:#A1A1AA;">No photo</div>';
+      }
+
+      let statusPillHtml = '';
+      if (isAnalyzing) {
+        statusPillHtml = '<span class="history-status-tag" style="background:#DBEAFE; color:#1D4ED8; border-color:#BFDBFE;">⚡ Analyzing...</span>';
+      } else if (isReady) {
+        statusPillHtml = '<span class="history-status-tag completed" style="background:#ECFDF5; color:#047857; border-color:#A7F3D0;">✓ Recaptured — Ready to Send</span>';
+      } else {
+        statusPillHtml = '<span class="history-status-tag pending_review" style="background:#FEF3C7; color:#92400E; border-color:#FDE68A;">⚠️ Needs Recapture</span>';
+      }
+
+      let verdictPillHtml = '';
+      if (isReady && item.compliant !== null && item.compliant !== undefined) {
+        verdictPillHtml = item.compliant
+          ? '<span class="history-status-pill tag-found" style="margin-left:6px; font-size:0.75rem;">Field: Compliant</span>'
+          : '<span class="history-status-pill tag-missing" style="margin-left:6px; font-size:0.75rem;">Field: Non-Compliant</span>';
+      }
+
+      const isExpanded = (expandedRecaptureItemId === item.item_id);
+
+      // Declaration summary preview pills
+      let declSummaryHtml = '';
+      const declFound = item.declarations_found || [];
+      const declMissing = item.declarations_missing || [];
+      if (declFound.length > 0 || declMissing.length > 0) {
+        const foundPills = declFound.slice(0, 4).map(k => {
+          const field = RULE6_FIELDS.find(f => f.key === k);
+          return `<span class="declaration-pill pill-compliant" style="font-size:0.68rem; padding:2px 6px;">✓ ${escapeHtml(field ? field.name : k)}</span>`;
+        }).join('');
+        const missingPills = declMissing.map(k => {
+          const field = RULE6_FIELDS.find(f => f.key === k);
+          return `<span class="declaration-pill pill-missing" style="font-size:0.68rem; padding:2px 6px;">✗ ${escapeHtml(field ? field.name : k)}</span>`;
+        }).join('');
+        const moreCount = Math.max(0, declFound.length - 4);
+        const morePill = moreCount > 0 ? `<span class="declaration-pill pill-compliant" style="font-size:0.68rem; padding:2px 6px;">+${moreCount} more</span>` : '';
+        declSummaryHtml = `
+          <div style="display:flex; flex-wrap:wrap; gap:0.35rem; margin-top:0.45rem; align-items:center;">
+            <span style="font-size:0.72rem; font-weight:700; color:#475569;">Declarations:</span>
+            ${foundPills}
+            ${morePill}
+            ${missingPills}
+          </div>
+        `;
+      }
+
+      // Initialize stagedEdits if expanded
+      if (isExpanded && !stagedEdits[item.item_id]) {
+        stagedEdits[item.item_id] = {
+          product_name: item.product_name || '',
+          product_category: item.product_category || 'Packaged Commodity',
+          product_origin: item.product_origin || item.declaration_values?.product_origin || 'Domestic',
+          photos: JSON.parse(JSON.stringify(item.photos || [])),
+          declarations_found: [...(item.declarations_found || [])],
+          declarations_missing: [...(item.declarations_missing || [])],
+          declaration_values: extractInitialDeclarationValues(item)
+        };
+      }
+
+      const parentBatchStatusText = item.batch_status === 'completed' ? 'Completed' : 'Pending Review';
+
+      card.innerHTML = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem; padding-bottom:0.35rem; border-bottom:1px solid #F4F4F5; font-size:0.75rem; color:#71717A;">
+          <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+            <span style="font-weight:700; color:#18181B;">Origin:</span>
+            <span class="summary-pill" style="font-size:0.7rem; padding:1px 6px;">${escapeHtml(item.batch_id || 'Batch')}</span>
+            <span style="font-weight:600; color:#3F3F46;">${escapeHtml(item.store_name || 'Store')}</span>
+            <span>(${escapeHtml(item.store_location || 'Jurisdiction')})</span>
+            <span style="color:#A1A1AA;">• Batch Status: ${parentBatchStatusText} (Preserved)</span>
+          </div>
+          <div>
+            ${isReady ? `<input type="checkbox" class="recapture-item-chk" data-item-id="${item.item_id}" style="accent-color:#D97706; transform:scale(1.2); cursor:pointer;" />` : ''}
+          </div>
+        </div>
+
+        <div style="display:flex; gap:0.85rem; align-items:flex-start; flex-wrap:wrap;">
+          <div style="display:flex; gap:0.35rem; flex-shrink:0;">
+            ${photosHtml}
+          </div>
+          <div style="flex:1; min-width:200px;">
+            <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+              <strong style="font-size:0.95rem; color:#18181B;">${escapeHtml(item.product_name || 'Specimen Item')}</strong>
+              <span style="font-family:monospace; font-size:0.75rem; color:#71717A;">(${item.item_id})</span>
+              ${statusPillHtml}
+              ${verdictPillHtml}
+            </div>
+
+            <div style="margin-top:0.35rem; padding:0.4rem 0.6rem; background:#FEF3C7; border-left:3px solid #D97706; border-radius:4px; font-size:0.8rem; color:#78350F;">
+              <strong>Reviewing Officer Note:</strong> "${escapeHtml(item.officer_remarks || 'Photo was blurry or unreadable. Please recapture under direct lighting.')}"
+            </div>
+
+            ${declSummaryHtml}
+          </div>
+
+          <div style="display:flex; flex-direction:column; gap:0.4rem; align-items:flex-end; margin-left:auto;">
+            ${!isReady && !isAnalyzing ? `
+              <button type="button" class="btn-primary btn-recapture-action" data-item-id="${item.item_id}" style="font-size:0.8rem; padding:0.35rem 0.75rem; background:#D97706; border-color:#B45309;">
+                Recapture Photo 📷
+              </button>
+            ` : ''}
+
+            ${isReady ? `
+              <div style="display:flex; gap:0.4rem; flex-wrap:wrap; justify-content:flex-end;">
+                <button type="button" class="btn-secondary btn-replace-action" data-item-id="${item.item_id}" style="font-size:0.78rem; padding:0.3rem 0.6rem;">
+                  Replace ↺
+                </button>
+                <button type="button" class="btn-primary btn-send-single" data-item-id="${item.item_id}" style="font-size:0.78rem; padding:0.3rem 0.65rem; background:#059669; border-color:#047857;">
+                  Send to Officer ✉️
+                </button>
+              </div>
+            ` : ''}
+
+            <button type="button" class="btn-secondary btn-toggle-recapture-decls" data-item-id="${item.item_id}" style="font-size:0.78rem; padding:0.3rem 0.65rem; margin-top:2px;">
+              ${isExpanded ? 'Collapse Declarations ▲' : '📝 View Declarations & Edit'}
+            </button>
+          </div>
+        </div>
+
+        <div class="recapture-detail-container" style="margin-top:0.75rem;"></div>
+      `;
+
+      if (isExpanded) {
+        const detailContainer = card.querySelector('.recapture-detail-container');
+        if (detailContainer) {
+          const detailCard = renderBatchDeclarationsDetailCard(item);
+          detailContainer.appendChild(detailCard);
+        }
+      }
+
+      // Event listeners on card buttons
+      const btnToggleDecls = card.querySelector('.btn-toggle-recapture-decls');
+      if (btnToggleDecls) {
+        btnToggleDecls.addEventListener('click', () => {
+          if (expandedRecaptureItemId === item.item_id) {
+            expandedRecaptureItemId = null;
+            delete stagedEdits[item.item_id];
+          } else {
+            expandedRecaptureItemId = item.item_id;
+          }
+          renderRecaptureSection();
+        });
+      }
+
+      const btnRecapture = card.querySelector('.btn-recapture-action');
+      if (btnRecapture) {
+        btnRecapture.addEventListener('click', () => {
+          openPhotoReplacement({
+            itemId: item.item_id,
+            photoIdx: 0,
+            angle: 'front',
+            isRecapture: true,
+            item
+          });
+        });
+      }
+
+      const btnReplace = card.querySelector('.btn-replace-action');
+      if (btnReplace) {
+        btnReplace.addEventListener('click', () => {
+          openPhotoReplacement({
+            itemId: item.item_id,
+            photoIdx: 0,
+            angle: 'front',
+            isRecapture: true,
+            item
+          });
+        });
+      }
+
+      const btnSend = card.querySelector('.btn-send-single');
+      if (btnSend) {
+        btnSend.addEventListener('click', () => {
+          submitRecapturedItems([item.item_id]);
+        });
+      }
+
+      const chk = card.querySelector('.recapture-item-chk');
+      if (chk) {
+        chk.addEventListener('change', () => {
+          updateResubmitSelectedBtnState();
+        });
+      }
+
+      recaptureItemsList.appendChild(card);
+    });
+  }
+
+  function updateResubmitSelectedBtnState() {
+    if (!btnResubmitSelectedRecaptures) return;
+    const chks = document.querySelectorAll('.recapture-item-chk:checked');
+    const count = chks.length;
+    btnResubmitSelectedRecaptures.disabled = (count === 0);
+    btnResubmitSelectedRecaptures.textContent = `Resubmit Selected (${count}) →`;
+  }
+
+  if (btnResubmitSelectedRecaptures) {
+    btnResubmitSelectedRecaptures.addEventListener('click', async () => {
+      const chks = Array.from(document.querySelectorAll('.recapture-item-chk:checked'));
+      const itemIds = chks.map(c => c.dataset.itemId).filter(Boolean);
+      if (itemIds.length === 0) return;
+      await submitRecapturedItems(itemIds);
+    });
+  }
+
+  if (chkRecaptureSelectAll) {
+    chkRecaptureSelectAll.addEventListener('change', (e) => {
+      const checked = e.target.checked;
+      document.querySelectorAll('.recapture-item-chk').forEach(c => {
+        c.checked = checked;
+      });
+      updateResubmitSelectedBtnState();
+    });
+  }
+
+  async function submitRecapturedItems(itemIds) {
+    if (!itemIds || itemIds.length === 0) return;
+    const ok = await showConfirm(
+      `Send ${itemIds.length} corrected specimen(s) back to the Reviewing Officer for re-review?\n\nParent batch status will remain unchanged.`,
+      'Submit Recaptured Specimen(s)',
+      'Send to Officer',
+      'Cancel'
+    );
+    if (!ok) return;
+
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/inspector/resubmit-recaptures`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item_ids: itemIds })
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.error || `HTTP ${res.status}`);
+      }
+
+      // Remove from activeRecaptures
+      const idSet = new Set(itemIds);
+      activeRecaptures = activeRecaptures.filter(r => !idSet.has(r.item_id));
+
+      renderRecaptureSection();
+      renderAlertsTab();
+
+      await showAlert(
+        `✓ ${itemIds.length} corrected specimen(s) successfully returned to Reviewing Officer for re-review!`,
+        'Recaptures Submitted'
+      );
+    } catch (err) {
+      console.error('Failed to resubmit recaptures:', err);
+      await showAlert(`Failed to resubmit recaptures: ${err.message}`, 'Submission Error');
+    }
+  }
+
 
   // =========================================================================
   // 10. HISTORY TAB (Submitted Batches & Read-Only Review)
@@ -1887,10 +2637,17 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     try {
       const inspectorId = user.badge_number || user.username || 'LMO-DL-04';
-      const res = await fetch(`${API_BASE_URL}/api/inspector/history?inspector_id=${encodeURIComponent(inspectorId)}`);
+      const res = await fetch(`${API_BASE_URL}/api/batches?inspector_id=${encodeURIComponent(inspectorId)}`);
       if (!res.ok) throw new Error('Failed to load history');
-      const batches = await res.json();
-      renderHistoryBatchesList(batches);
+      const allBatches = await res.json();
+
+      let submitted = [];
+      if (Array.isArray(allBatches)) {
+        submitted = allBatches.filter(b => b.status !== 'draft');
+      } else if (allBatches && typeof allBatches === 'object') {
+        submitted = allBatches.submitted || [];
+      }
+      renderHistoryBatchesList(submitted);
     } catch (err) {
       historyBatchesList.innerHTML = `<div class="table-empty" style="color:#DC2626;">Error loading batch history: ${escapeHtml(err.message)}</div>`;
     }
@@ -1898,25 +2655,65 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function renderHistoryBatchesList(batches) {
     if (!historyBatchesList) return;
-    if (!batches || batches.length === 0) {
+    const all = batches || [];
+    const pendingBatches = all.filter(b => b.status === 'pending_review' || b.status === 'under_review' || (b.status !== 'draft' && b.status !== 'completed'));
+    const completedBatches = all.filter(b => b.status === 'completed');
+
+    if (all.length === 0) {
       historyBatchesList.innerHTML = '<div class="table-empty">No submitted batches found. Completed batches submitted to the Reviewing Officer will appear here.</div>';
       return;
     }
 
-    historyBatchesList.innerHTML = '';
-    batches.forEach(b => {
+    historyBatchesList.innerHTML = `
+      <!-- Section 1: Pending Review -->
+      <div class="history-section" style="margin-bottom: 2rem;">
+        <div class="history-section-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.85rem; padding-bottom: 0.5rem; border-bottom: 2px solid #E4E4E7;">
+          <div>
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <h4 style="margin:0; font-size:1.05rem; font-weight:700; color:#18181B;">Pending Review</h4>
+              <span class="history-status-tag pending_review" style="background:#FEF3C7; color:#92400E; border-color:#FDE68A; font-weight:700;">${pendingBatches.length}</span>
+            </div>
+            <p style="margin:2px 0 0; font-size:0.8rem; color:#71717A;">Batches submitted to Reviewing Officer, awaiting adjudication</p>
+          </div>
+        </div>
+        <div class="history-cards-group" id="historyPendingGroup" style="display:flex; flex-direction:column; gap:0.75rem;"></div>
+      </div>
+
+      <!-- Section 2: Completed -->
+      <div class="history-section">
+        <div class="history-section-header" style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.85rem; padding-bottom: 0.5rem; border-bottom: 2px solid #E4E4E7;">
+          <div>
+            <div style="display:flex; align-items:center; gap:0.5rem;">
+              <h4 style="margin:0; font-size:1.05rem; font-weight:700; color:#18181B;">Completed</h4>
+              <span class="history-status-tag completed" style="background:#ECFDF5; color:#047857; border-color:#A7F3D0; font-weight:700;">${completedBatches.length}</span>
+            </div>
+            <p style="margin:2px 0 0; font-size:0.8rem; color:#71717A;">Batches fully reviewed and closed by the Reviewing Officer</p>
+          </div>
+        </div>
+        <div class="history-cards-group" id="historyCompletedGroup" style="display:flex; flex-direction:column; gap:0.75rem;"></div>
+      </div>
+    `;
+
+    const pendingContainer = historyBatchesList.querySelector('#historyPendingGroup');
+    const completedContainer = historyBatchesList.querySelector('#historyCompletedGroup');
+
+    function createBatchCard(b) {
       const card = document.createElement('div');
       card.className = 'history-batch-card';
       const subDate = b.submitted_at
         ? new Date(b.submitted_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
         : (b.created_at ? new Date(b.created_at).toLocaleDateString() : 'Recent');
 
+      const isComp = b.status === 'completed';
+      const statusClass = isComp ? 'completed' : 'pending_review';
+      const statusText = isComp ? 'Completed' : 'Pending Review';
+
       card.innerHTML = `
         <div class="history-batch-header">
           <div class="history-batch-title-col">
             <div class="history-badge-row">
               <span class="summary-pill">${escapeHtml(b.batch_id)}</span>
-              <span class="history-status-tag ${b.status}">${b.status === 'completed' ? 'Completed' : 'Pending Review'}</span>
+              <span class="history-status-tag ${statusClass}">${statusText}</span>
             </div>
             <h4 class="history-store-title">${escapeHtml(b.store_name || 'Retail Store')}</h4>
             <span class="history-store-loc">${escapeHtml(b.store_location || 'Jurisdiction')}</span>
@@ -1939,8 +2736,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         openHistoryBatchDetail(b.batch_id);
       });
 
-      historyBatchesList.appendChild(card);
-    });
+      return card;
+    }
+
+    if (pendingBatches.length === 0) {
+      pendingContainer.innerHTML = '<div class="table-empty" style="padding: 1rem;">No batches pending officer review.</div>';
+    } else {
+      pendingBatches.forEach(b => pendingContainer.appendChild(createBatchCard(b)));
+    }
+
+    if (completedBatches.length === 0) {
+      completedContainer.innerHTML = '<div class="table-empty" style="padding: 1rem;">No completed batches yet.</div>';
+    } else {
+      completedBatches.forEach(b => completedContainer.appendChild(createBatchCard(b)));
+    }
   }
 
   async function openHistoryBatchDetail(batchId) {
@@ -1991,7 +2800,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       let thumbHtml = '';
       if (photos.length > 0) {
         thumbHtml = photos.map(p => {
-          const src = p.url.startsWith('data:') ? p.url : (API_BASE_URL + p.url);
+          const src = formatPhotoUrl(p.url);
           return `<img src="${src}" class="manifest-thumb" title="${escapeHtml(p.angle || '')}" />`;
         }).join('');
       } else {
@@ -2052,7 +2861,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const photos = item.photos || [];
     let photosHtml = '';
     photos.forEach((p, pIdx) => {
-      const src = p.url.startsWith('data:') ? p.url : (API_BASE_URL + p.url);
+      const src = formatPhotoUrl(p.url);
       const angleLabel = p.angle ? p.angle.toUpperCase() : `PHOTO #${pIdx + 1}`;
       photosHtml += `
         <div class="camera-photo-thumb-card" data-idx="${pIdx}" title="Tap to enlarge full-size">
@@ -2189,6 +2998,9 @@ document.addEventListener('DOMContentLoaded', async () => {
           <span class="notice-badge">⚠️ Recapture Requested</span>
           <span class="notice-item-id">${item.item_id}</span>
         </div>
+        <div style="font-size:0.75rem; color:#78350F; margin:4px 0 8px; font-weight:600;">
+          Origin: ${escapeHtml(item.batch_id || 'Batch')} • ${escapeHtml(item.store_name || 'Store')} (${escapeHtml(item.store_location || 'Jurisdiction')})
+        </div>
         <h4 class="notice-product-title">${escapeHtml(item.product_name || 'Item')}</h4>
         <div class="notice-officer-box">
           <strong>Reviewing Officer Instructions:</strong>
@@ -2196,21 +3008,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
         <div class="notice-actions">
           <button type="button" class="btn-primary btn-resolve-recapture">
-            Resolve Recaptures →
+            Recapture Photo 📷 →
           </button>
         </div>
       `;
 
       card.querySelector('.btn-resolve-recapture').addEventListener('click', () => {
-        currentRecapturingItemId = item.item_id;
-        recaptureItemTitle.textContent = item.product_name || item.item_id;
-        recaptureOfficerNote.textContent = `Officer note: ${item.officer_remarks || 'Retake photo under direct lighting.'}`;
-        recaptureActiveBanner.classList.remove('hidden');
-
-        switchTab('camera');
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-
-        uploadOptionsModal.classList.remove('hidden');
+        openPhotoReplacement({
+          itemId: item.item_id,
+          photoIdx: 0,
+          angle: 'front',
+          isRecapture: true,
+          item
+        });
       });
 
       alertsListContainer.appendChild(card);
@@ -2225,6 +3035,11 @@ document.addEventListener('DOMContentLoaded', async () => {
       const res = await fetch(`${API_BASE_URL}/api/inspector/dashboard?inspector_id=${encodeURIComponent(user.badge_number || user.username)}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
+
+      // 0. Destination Reviewing Officer
+      if (data.reviewing_officer) {
+        renderDestinationOfficer(data.reviewing_officer);
+      }
 
       // 1. Active Batch
       if (data.active_batch) {
@@ -2245,6 +3060,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const count = (activeBatch.items || []).length;
         if (summaryItemCount) summaryItemCount.textContent = `${count} / 15`;
         tabBatchBadge.textContent = count;
+        if (btnDeleteActiveBatch) btnDeleteActiveBatch.classList.toggle('hidden', activeBatch.status !== 'draft');
       } else {
         activeBatch = null;
         summaryBatchId.textContent = 'No Batch Active';
@@ -2260,6 +3076,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         if (summaryItemCount) summaryItemCount.textContent = '0 / 15';
         tabBatchBadge.textContent = '0';
+        if (btnDeleteActiveBatch) btnDeleteActiveBatch.classList.add('hidden');
       }
 
       // 2. Recaptures / Alerts

@@ -57,37 +57,18 @@ The relational data model in Supabase (PostgreSQL) connects field enforcement se
 
 ```mermaid
 erDiagram
-    users ||--o{ batches : "inspects / creates"
     batches ||--|{ batch_items : "contains"
-    batch_items ||--o{ item_photos : "includes"
-    batch_items ||--o{ rule6_results : "evaluated against"
-    batch_items ||--o{ officer_verdicts : "adjudicated by"
-    users ||--o{ officer_verdicts : "authorizes"
-
-    users {
-        uuid id PK
-        string email
-        string role "inspector | officer | admin"
-        string full_name
-        string badge_number
-        string jurisdiction
-        timestamp created_at
-    }
 
     batches {
         string batch_id PK
-        string store_name
-        string store_location
-        string inspector_id FK
+        string inspector_id
         string inspector_name
         string jurisdiction
+        string store_name
+        text store_location
         string status "active | pending_review | under_review | completed"
-        int item_count
-        int compliant_count
-        int non_compliant_count
         timestamp created_at
         timestamp submitted_at
-        timestamp completed_at
     }
 
     batch_items {
@@ -95,40 +76,20 @@ erDiagram
         string batch_id FK
         string product_name
         string product_category
-        boolean field_compliant
-        float confidence_score
-        string raw_ocr_text
-        string cleaned_summary
-        string status "pending | approved | overridden | recapture"
-        timestamp captured_at
-    }
-
-    item_photos {
-        uuid id PK
-        string item_id FK
-        string angle "front | back | side"
-        string storage_path
-        boolean is_sharp
-    }
-
-    rule6_results {
-        uuid id PK
-        string item_id FK
-        string declaration_name
-        string sub_rule
-        boolean is_present
-        string extracted_value
-    }
-
-    officer_verdicts {
-        uuid id PK
-        string item_id FK
-        string officer_id FK
-        string action "approve | override | recapture | correct"
-        boolean final_verdict
+        jsonb photos "array of {photo_id, url, angle, is_blurry, blur_score, timestamp}"
+        boolean compliant
+        float confidence
+        jsonb declarations_found "array of string rule keys"
+        jsonb declarations_missing "array of string rule keys"
+        jsonb declaration_values "object mapping rule keys to extracted values"
+        text raw_ocr_text
+        text cleaned_summary
+        string status "pending | approved | overridden | recapture_requested"
+        boolean needs_review
+        jsonb review_reasons "array of string flags"
+        string officer_action
         text officer_remarks
-        string section_penalty "Section 36(1) | Section 36(2) | None"
-        timestamp adjudicated_at
+        timestamp created_at
     }
 ```
 
