@@ -64,13 +64,13 @@
       <div class="batch-strip-content">
         <div class="batch-strip-main">
           <div class="batch-pill-row">
-            <span class="summary-pill" id="summaryBatchId">BATCH-2026-01</span>
+            <span class="summary-pill" id="summaryBatchId">No Batch Active</span>
             <span class="summary-item-badge">
               <span>Items:</span>
               <strong id="summaryItemCount">0 / 15</strong>
             </span>
           </div>
-          <div class="summary-store" id="summaryStoreName">Modern Bazaar • Sector 18</div>
+          <div class="summary-store" id="summaryStoreName">Tap Camera tab to start session</div>
         </div>
         <button type="button" class="btn-secondary btn-new-batch-trigger" id="btnTriggerNewBatchModal">
           + New Batch
@@ -96,7 +96,7 @@
         </div>
 
         <!-- Empty State when no active batch session -->
-        <div class="card camera-empty-state-card hidden" id="cameraNoBatchEmptyState">
+        <div class="card camera-empty-state-card" id="cameraNoBatchEmptyState">
           <div class="camera-empty-icon-wrap">
             <span class="camera-empty-icon">📋</span>
           </div>
@@ -118,7 +118,7 @@
         </div>
 
         <!-- Primary Action: Upload Label Button -->
-        <div class="upload-trigger-container" id="uploadTriggerContainer">
+        <div class="upload-trigger-container hidden" id="uploadTriggerContainer">
           <button type="button" class="btn-primary btn-upload-label" id="btnUploadLabel">
             <span class="btn-upload-icon">📷</span>
             <span class="btn-upload-label-text">Upload Label</span>
@@ -127,7 +127,7 @@
         </div>
 
         <!-- Item List Table Card (Shared component listing items in active batch) -->
-        <div class="card manifest-section-card" id="cameraItemListCard">
+        <div class="card manifest-section-card hidden" id="cameraItemListCard">
           <div class="card-header manifest-header-flex">
             <div>
               <h3 class="card-title">Captured Items</h3>
@@ -192,12 +192,12 @@
           <div class="card-header batch-stats-header-row">
             <div class="batch-header-active-info">
               <div class="batch-tab-pill-row">
-                <span class="summary-pill" id="batchTabBatchId">BATCH-2026-01</span>
-                <span class="history-status-tag pending_review" id="batchTabStatusBadge" style="background:#ECFDF5; color:#047857; border-color:#A7F3D0;">Active Session</span>
+                <span class="summary-pill" id="batchTabBatchId">No Batch Active</span>
+                <span class="history-status-tag draft" id="batchTabStatusBadge" style="background:#F4F4F5; color:#71717A; border-color:#D4D4D8;">No Active Session</span>
                 <button type="button" class="btn-switch-batch" id="btnSwitchBatch" title="Switch to another draft or submitted batch">Switch Batch ⇄</button>
                 <button type="button" class="btn-delete-active-batch hidden" id="btnDeleteActiveBatch" title="Delete this draft batch" style="background:#FEE2E2; color:#DC2626; border:1px solid #FECACA; border-radius:6px; font-size:0.75rem; font-weight:600; padding:0.25rem 0.6rem; cursor:pointer;">Delete Draft 🗑️</button>
               </div>
-              <h3 class="card-title" id="batchTabStoreName" style="margin-top: 0.25rem;">Modern Bazaar • Sector 18</h3>
+              <h3 class="card-title" id="batchTabStoreName" style="margin-top: 0.25rem;">No active batch session</h3>
               <span class="batch-kicker">Compliance Breakdown</span>
             </div>
             <span class="quota-badge" id="statQuotaText">0 / 15</span>

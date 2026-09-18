@@ -146,20 +146,7 @@ const memoryItems: Map<string, BatchItemRecord> = new Map();
 
 // Initialize demo batches only for offline local testing when Supabase is not connected
 function initDemoData() {
-  if (getSupabaseClient() || memoryBatches.size > 0) return;
-
-  const demoBatchId = 'BATCH-2026-DEL-001';
-  memoryBatches.set(demoBatchId, {
-    batch_id: demoBatchId,
-    inspector_id: 'LMO-DL-04',
-    inspector_name: 'Rajesh Kumar',
-    jurisdiction: 'Central District, Circle 2',
-    store_name: 'SuperMart Hypermarket',
-    store_location: 'Connaught Place, New Delhi',
-    status: 'draft',
-    created_at: new Date().toISOString(),
-    submitted_at: null,
-  });
+  // Offline in-memory store starts clean with zero active draft batches
 }
 initDemoData();
 
