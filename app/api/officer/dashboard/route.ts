@@ -11,7 +11,13 @@ export async function GET(req: NextRequest) {
 
     const dashboardData = await dataStore.getOfficerDashboardData(officerId);
 
-    return NextResponse.json(dashboardData);
+    return NextResponse.json(dashboardData, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    });
   } catch (err: any) {
     console.error('[officer/dashboard] Error:', err);
     return NextResponse.json({ error: err.message || 'Failed to fetch officer dashboard' }, { status: 500 });

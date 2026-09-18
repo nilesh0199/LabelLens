@@ -1470,32 +1470,37 @@ document.addEventListener('DOMContentLoaded', () => {
         officerPendingBadge.style.display = pendingCount > 0 ? 'inline-block' : 'none';
       }
 
-      await loadOfficerBatches(officerBatchStatusFilter ? officerBatchStatusFilter.value : 'all');
+      await loadOfficerBatches(officerBatchStatusFilter ? officerBatchStatusFilter.value : 'submitted');
     } catch (err) {
       console.error('Error loading officer dashboard:', err);
     }
   }
 
   // 2. Load and filter batches in officer inbox
-  async function loadOfficerBatches(status = 'all') {
+  async function loadOfficerBatches(status = 'submitted') {
     if (!officerQueueTableBody) return;
     officerQueueTableBody.innerHTML = '<tr><td colspan="8" class="table-empty">Loading batches...</td></tr>';
 
     try {
-      const query = status && status !== 'all' ? `?status=${status}` : '';
-      const res = await fetch(`${API_BASE_URL}/api/officer/batches${query}`);
+      const query = status && status !== 'all' ? `?status=${encodeURIComponent(status)}&_t=${Date.now()}` : `?_t=${Date.now()}`;
+      const res = await fetch(`${API_BASE_URL}/api/officer/batches${query}`, { cache: 'no-store' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const batches = await res.json();
 
-      renderOfficerBatchQueue(batches);
+      renderOfficerBatchQueue(batches, status);
     } catch (err) {
       officerQueueTableBody.innerHTML = `<tr><td colspan="8" class="table-empty" style="color:var(--red-text);">Error: ${err.message}</td></tr>`;
     }
   }
 
-  function renderOfficerBatchQueue(batches) {
+  function renderOfficerBatchQueue(batches, currentFilter = 'submitted') {
     if (!officerQueueTableBody) return;
-    if (!batches || batches.length === 0) {
+    const displayBatches = (batches || []).filter(b => {
+      if (currentFilter === 'completed') return b.status === 'completed';
+      return b.status !== 'completed';
+    });
+
+    if (displayBatches.length === 0) {
       officerQueueTableBody.innerHTML = '<tr><td colspan="8" class="table-empty">No inspection dossiers found for this status.</td></tr>';
       return;
     }

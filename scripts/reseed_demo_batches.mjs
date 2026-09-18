@@ -21,22 +21,41 @@ const supabase = createClient(
 );
 
 const DEMO_BATCH_PREFIXES = ['BATCH-DL-', 'BATCH-MH-'];
+const DEMO_BATCHES_TO_KEEP = new Set([
+  'BATCH-DL-001', 'BATCH-DL-002', 'BATCH-DL-003', 'BATCH-DL-004', 'BATCH-DL-005',
+  'BATCH-MH-001', 'BATCH-MH-002', 'BATCH-MH-003', 'BATCH-MH-004', 'BATCH-MH-005'
+]);
 
 async function main() {
-  console.log('--- Resizing Demo Batches to 8-9 items each ---');
+  console.log('--- Resizing Demo Batches: 50%+ Reduction (10 batches, 3-4 items each) ---');
   
   const { data: batches, error: bErr } = await supabase.from('batches').select('batch_id').order('batch_id');
   if (bErr) throw bErr;
 
   const demoBatches = batches.filter(b => DEMO_BATCH_PREFIXES.some(prefix => b.batch_id.startsWith(prefix)));
-  console.log(`Found ${demoBatches.length} demo batches.`);
+  console.log(`Found ${demoBatches.length} demo batches in database.`);
 
+  // 1. Delete discarded demo batches (BATCH-DL-006 to 010, BATCH-MH-006 to 010)
+  const batchesToDelete = demoBatches.filter(b => !DEMO_BATCHES_TO_KEEP.has(b.batch_id)).map(b => b.batch_id);
+  if (batchesToDelete.length > 0) {
+    console.log(`Removing ${batchesToDelete.length} excess demo batches:`, batchesToDelete);
+    // Delete items first
+    const { error: delItemsErr } = await supabase.from('batch_items').delete().in('batch_id', batchesToDelete);
+    if (delItemsErr) console.error('Error deleting items for discarded batches:', delItemsErr);
+
+    // Delete batches
+    const { error: delBatchesErr } = await supabase.from('batches').delete().in('batch_id', batchesToDelete);
+    if (delBatchesErr) console.error('Error deleting discarded batches:', delBatchesErr);
+  }
+
+  // 2. Resize remaining 10 demo batches to 3-4 items each
+  const keptBatches = demoBatches.filter(b => DEMO_BATCHES_TO_KEEP.has(b.batch_id));
   let totalDeleted = 0;
   let totalKept = 0;
 
-  for (let bIndex = 0; bIndex < demoBatches.length; bIndex++) {
-    const batchId = demoBatches[bIndex].batch_id;
-    const targetSize = (bIndex % 2 === 0) ? 9 : 8;
+  for (let bIndex = 0; bIndex < keptBatches.length; bIndex++) {
+    const batchId = keptBatches[bIndex].batch_id;
+    const targetSize = (bIndex % 2 === 0) ? 4 : 3;
 
     const { data: items, error: iErr } = await supabase
       .from('batch_items')
@@ -70,11 +89,15 @@ async function main() {
       console.log(`${batchId}: Reduced from ${items.length} to ${targetSize} items.`);
     } else {
       totalKept += items.length;
-      console.log(`${batchId}: Already has ${items.length} items (target: ${targetSize}).`);
+      console.log(`${batchId}: Already has ${items.length} items.`);
     }
   }
 
-  console.log(`\nCompleted! Total demo items kept: ${totalKept}, total excess items removed: ${totalDeleted}`);
+  // 3. Mark BATCH-DL-004 and BATCH-DL-005 as completed so queue tab is uncluttered
+  await supabase.from('batches').update({ status: 'completed' }).in('batch_id', ['BATCH-DL-004', 'BATCH-DL-005']);
+  await supabase.from('batch_items').update({ status: 'reviewed', officer_action: 'approve' }).in('batch_id', ['BATCH-DL-004', 'BATCH-DL-005']);
+
+  console.log(`\nCompleted! Kept ${keptBatches.length} demo batches with ${totalKept} total items. Removed ${batchesToDelete.length} batches and ${totalDeleted} excess items.`);
 }
 
 main().catch(console.error);

@@ -49,17 +49,42 @@ export async function GET(req: NextRequest) {
 
     let filteredBatches = reconciledBatches;
     if (status) {
-      if (status === 'submitted' || status === 'pending' || status === 'active' || status === 'all') {
-        filteredBatches = filteredBatches.filter(b => b.status === 'pending_review' || b.status === 'under_review');
+      if (status === 'completed') {
+        filteredBatches = filteredBatches.filter(b => b.status === 'completed');
+      } else if (status === 'under_review') {
+        filteredBatches = filteredBatches.filter(b => b.status === 'under_review');
       } else {
-        filteredBatches = filteredBatches.filter(b => b.status === status);
+        // 'submitted', 'pending', 'active', 'all', etc. are active queue views
+        filteredBatches = filteredBatches.filter(b => b.status === 'pending_review' || b.status === 'under_review');
+      }
+    } else {
+      // For general queue view (no status, no inspector_id), default to active only (exclude completed).
+      // If inspector_id is provided without status (e.g. inspector history panel), show all submitted & completed.
+      if (!inspectorId) {
+        filteredBatches = filteredBatches.filter(b => b.status === 'pending_review' || b.status === 'under_review');
       }
     }
+
     if (inspectorId) {
-      filteredBatches = filteredBatches.filter(b => b.inspector_id === inspectorId);
+      // Support aliases: e.g. 'LMO-DL-04' also matches 'inspector' and 'INSP-DEL-042'
+      const idUpper = inspectorId.toUpperCase();
+      const isRajesh = idUpper === 'LMO-DL-04' || idUpper === 'INSPECTOR' || idUpper === 'INSP-DEL-042';
+      filteredBatches = filteredBatches.filter(b => {
+        if (isRajesh) {
+          const bId = (b.inspector_id || '').toUpperCase();
+          return bId === 'LMO-DL-04' || bId === 'INSPECTOR' || bId === 'INSP-DEL-042' || (b.inspector_name && b.inspector_name.includes('Rajesh'));
+        }
+        return b.inspector_id === inspectorId;
+      });
     }
 
-    return NextResponse.json(filteredBatches);
+    return NextResponse.json(filteredBatches, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    });
   } catch (err: any) {
     console.error('[officer/batches] Error:', err);
     return NextResponse.json({ error: err.message || 'Failed to list officer batches' }, { status: 500 });

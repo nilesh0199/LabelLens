@@ -220,7 +220,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   async function loadOfficerDashboard() {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/officer/dashboard?officer_id=${encodeURIComponent(officerId)}`);
+      const res = await fetch(`${API_BASE_URL}/api/officer/dashboard?officer_id=${encodeURIComponent(officerId)}&_t=${Date.now()}`, { cache: 'no-store' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
@@ -407,23 +407,21 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function renderBatchQueue(batches) {
     if (!officerQueueTableBody) return;
-    if (!batches || batches.length === 0) {
-      officerQueueTableBody.innerHTML = '<tr><td colspan="8" class="table-empty">No inspection batches found in this queue.</td></tr>';
+    const activeBatches = (batches || []).filter(b => b.status !== 'completed');
+    if (activeBatches.length === 0) {
+      officerQueueTableBody.innerHTML = '<tr><td colspan="8" class="table-empty">✓ No pending inspection batches found in this queue. All reviewed batches have been moved to the Ledger.</td></tr>';
+      if (navQueueBadge) navQueueBadge.textContent = '0';
       return;
     }
 
     officerQueueTableBody.innerHTML = '';
-    batches.forEach(b => {
+    activeBatches.forEach(b => {
       const tr = document.createElement('tr');
       const dateStr = b.submitted_at ? new Date(b.submitted_at).toLocaleString() : (b.created_at ? new Date(b.created_at).toLocaleString() : '--');
       const itemsCount = b.item_count || (b.items ? b.items.length : 0);
 
-      let statusBadgeClass = 'badge-submitted';
-      let statusLabel = 'Pending Review';
-      if (b.status === 'completed') {
-        statusBadgeClass = 'badge-completed';
-        statusLabel = 'Completed';
-      }
+      const statusBadgeClass = b.status === 'under_review' ? 'badge-in-review' : 'badge-submitted';
+      const statusLabel = b.status === 'under_review' ? 'Under Review' : 'Pending Review';
 
       const findingsPreview = `${b.compliant_count || 0} compliant, ${b.non_compliant_count || 0} non-compliant`;
 
@@ -452,9 +450,8 @@ document.addEventListener('DOMContentLoaded', async () => {
       officerQueueTableBody.appendChild(tr);
     });
 
-    if (navQueueBadge && Array.isArray(batches)) {
-      const pendingBatchesCount = batches.filter(b => b.status === 'pending_review' || b.status === 'under_review').length;
-      navQueueBadge.textContent = pendingBatchesCount;
+    if (navQueueBadge) {
+      navQueueBadge.textContent = activeBatches.length;
     }
   }
 
@@ -686,6 +683,13 @@ document.addEventListener('DOMContentLoaded', async () => {
   function returnToBatchQueue() {
     if (officerWorkbenchCard) officerWorkbenchCard.classList.add('hidden');
     if (officerInboxCard) officerInboxCard.classList.remove('hidden');
+
+    // Immediately evict completed batch from table DOM so it never lingers
+    if (activeBatch && activeBatch.status === 'completed' && officerQueueTableBody) {
+      const row = officerQueueTableBody.querySelector(`[data-batch-id="${activeBatch.batch_id}"]`)?.closest('tr');
+      if (row) row.remove();
+    }
+
     activeBatch = null;
     currentReviewingItem = null;
     loadOfficerDashboard();
@@ -717,14 +721,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
-      const ok = await showConfirm(
-        `Approve ${cleanItems.length} clean specimen(s) with confidence ≥ 85%? An individual approval audit record will be logged in the permanent legal metrology registry for each item.`,
+      const confirmed = await showConfirm(
         'Confirm Bulk Endorsement',
-        `Approve All (${cleanItems.length})`,
-        'Cancel'
+        `Bulk-approve all ${cleanItems.length} compliant specimen(s) in batch [${activeBatch.batch_id}]? This will certify compliance under Rule 6 and record verdicts to the permanent ledger.`
       );
 
-      if (!ok) return;
+      if (!confirmed) return;
 
       try {
         btnApproveAllClean.disabled = true;
@@ -770,12 +772,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         const allDone = activeBatch.items.every(i => i.status === 'reviewed' || i.status === 'recapture_requested' || (!!i.officer_action && i.officer_action !== 'recapture_resolved'));
-        if (allDone && workbenchBatchStatusPill) {
-          workbenchBatchStatusPill.textContent = 'Completed';
-          workbenchBatchStatusPill.className = 'status-pill badge-completed';
-          workbenchBatchStatusPill.style.background = '#DCFCE7';
-          workbenchBatchStatusPill.style.color = '#166534';
-          workbenchBatchStatusPill.style.borderColor = '#86EFAC';
+        if (allDone) {
+          activeBatch.status = 'completed';
+          if (workbenchBatchStatusPill) {
+            workbenchBatchStatusPill.textContent = 'Completed';
+            workbenchBatchStatusPill.className = 'status-pill badge-completed';
+            workbenchBatchStatusPill.style.background = '#DCFCE7';
+            workbenchBatchStatusPill.style.color = '#166534';
+            workbenchBatchStatusPill.style.borderColor = '#86EFAC';
+          }
         }
 
         // 4. Update bulk button state
@@ -826,8 +831,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         tr.innerHTML = `
           <td><strong style="font-family:var(--font-mono); font-size:0.82rem;">${insp.inspector_id}</strong></td>
-          <td>
-            <div style="font-weight:600; color:#14163A;">${insp.full_name || insp.inspector_name || 'Field Inspector'}</div>
+          <td class="inspector-name-cell" style="cursor: pointer;" title="Click to view submission history">
+            <div style="font-weight:600; color:#14163A; text-decoration: underline; text-decoration-color: #94A3B8;">${insp.full_name || insp.inspector_name || 'Field Inspector'} ↗</div>
             <div style="font-size:0.72rem; color:#64748B;">${insp.email || ''}</div>
           </td>
           <td><span class="officer-jurisdiction-badge" style="font-size:0.72rem;">${insp.jurisdiction_circle || insp.jurisdiction || 'Delhi Circle'}</span></td>
@@ -849,9 +854,16 @@ document.addEventListener('DOMContentLoaded', async () => {
           </td>
         `;
 
-        tr.querySelector('.btn-view-inspector-history').addEventListener('click', () => {
+        const triggerHistory = () => {
+          officerInspectorsTableBody.querySelectorAll('tr').forEach(r => r.style.background = '');
+          tr.style.background = '#EFF6FF';
           showInspectorHistory(insp);
-        });
+        };
+
+        const btnHistory = tr.querySelector('.btn-view-inspector-history');
+        if (btnHistory) btnHistory.addEventListener('click', triggerHistory);
+        const nameCell = tr.querySelector('.inspector-name-cell');
+        if (nameCell) nameCell.addEventListener('click', triggerHistory);
 
         officerInspectorsTableBody.appendChild(tr);
       });
@@ -865,10 +877,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const name = insp.inspector_name || insp.full_name || 'Field Inspector';
     inspectorHistoryTitle.textContent = `Submission History: ${name} (${insp.inspector_id})`;
     inspectorHistoryContainer.classList.remove('hidden');
+    inspectorHistoryContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
     inspectorHistoryTableBody.innerHTML = '<tr><td colspan="7" class="table-empty">Loading history batches...</td></tr>';
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/officer/batches?officer_id=${encodeURIComponent(officerId)}&inspector_id=${encodeURIComponent(insp.inspector_id)}`);
+      const res = await fetch(`${API_BASE_URL}/api/officer/batches?officer_id=${encodeURIComponent(officerId)}&inspector_id=${encodeURIComponent(insp.inspector_id)}&_t=${Date.now()}`, {
+        cache: 'no-store'
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const batches = await res.json();
 
@@ -1525,6 +1540,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     return true;
   }
 
+  function isDimensionsExempt(item) {
+    if (!item) return true;
+    const declVals = item.declaration_values || (typeof stagedEdits !== 'undefined' && stagedEdits?.declaration_values) || {};
+    const dimVal = (declVals.dimensions || '').trim();
+    if (dimVal && !/^(n\/?a|not applicable|exempt)/i.test(dimVal)) {
+      return false;
+    }
+    return true;
+  }
+
   function renderRule6List(item) {
     if (!modalRule6List) return;
     modalRule6List.innerHTML = '';
@@ -1579,11 +1604,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     MANDATORY_RULE6_FIELDS.forEach(field => {
       const isFound = foundSet.has(field.key);
-      const val = stagedEdits.declaration_values[field.key] || '';
+      let val = stagedEdits.declaration_values[field.key] || '';
+
+      // Normalize any existing legacy exemption strings to 'Not Applicable'
+      if (typeof val === 'string' && /^(n\/?a\s*\(exempt|exempt)/i.test(val.trim())) {
+        val = 'Not Applicable';
+      }
 
       // Special handling for Country of Origin when product is Domestic
       if (field.key === 'country_of_origin' && isDomestic) {
-        if (!val || !val.trim() || !isFound) {
+        if (!val || !val.trim() || val === 'Not Applicable' || !isFound) {
           const card = document.createElement('div');
           card.className = 'decl-editor-card is-present';
           card.style.background = '#F0FDF4';
@@ -1593,16 +1623,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="decl-editor-top" style="display: flex; justify-content: space-between; align-items: center;">
               <div class="decl-label-box">
                 <span class="decl-title" style="font-weight: 600; font-size: 0.82rem; color: #166534;">${field.label}</span>
-                <span class="decl-sub-tag" style="font-family: var(--font-mono); font-size: 0.7rem; color: #15803D;">Rule 6(1)(f) • Domestic Exemption</span>
+                <span class="decl-sub-tag" style="font-family: var(--font-mono); font-size: 0.7rem; color: #15803D;">Rule 6(1)(f) • Conditional</span>
               </div>
               <div>
                 <span style="font-size: 0.72rem; font-weight: 600; background: #DCFCE7; color: #166534; padding: 3px 8px; border-radius: 999px; border: 1px solid #86EFAC;">
-                  N/A (Exempt — domestically manufactured)
+                  Not Applicable
                 </span>
               </div>
             </div>
             <div class="decl-input-row" style="margin-top: 0.35rem;">
-              <input type="text" class="decl-field-input" data-key="${field.key}" value="" placeholder="N/A (Exempt — domestically manufactured)" disabled style="background: #F8FAFC; color: #64748B;" />
+              <input type="text" class="decl-field-input" data-key="${field.key}" value="" placeholder="Not Applicable" disabled style="background: #F8FAFC; color: #64748B;" />
             </div>
           `;
           modalRule6List.appendChild(card);
@@ -1612,7 +1642,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
       // Special handling for Unit Sale Price when product is a Single-unit package
       if (field.key === 'unit_sale_price' && isSingleUnitPackage(item)) {
-        if (!val || !val.trim() || !isFound) {
+        if (!val || !val.trim() || val === 'Not Applicable' || !isFound) {
           const card = document.createElement('div');
           card.className = 'decl-editor-card is-present';
           card.style.background = '#F0FDF4';
@@ -1622,16 +1652,45 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="decl-editor-top" style="display: flex; justify-content: space-between; align-items: center;">
               <div class="decl-label-box">
                 <span class="decl-title" style="font-weight: 600; font-size: 0.82rem; color: #166534;">${field.label}</span>
-                <span class="decl-sub-tag" style="font-family: var(--font-mono); font-size: 0.7rem; color: #15803D;">Rule 6(1)(i) • Single-Unit Exemption</span>
+                <span class="decl-sub-tag" style="font-family: var(--font-mono); font-size: 0.7rem; color: #15803D;">Rule 6(1)(i) • Conditional</span>
               </div>
               <div>
                 <span style="font-size: 0.72rem; font-weight: 600; background: #DCFCE7; color: #166534; padding: 3px 8px; border-radius: 999px; border: 1px solid #86EFAC;">
-                  N/A (Exempt — single-unit package)
+                  Not Applicable
                 </span>
               </div>
             </div>
             <div class="decl-input-row" style="margin-top: 0.35rem;">
-              <input type="text" class="decl-field-input" data-key="${field.key}" value="" placeholder="N/A (Exempt — single-unit package)" disabled style="background: #F8FAFC; color: #64748B;" />
+              <input type="text" class="decl-field-input" data-key="${field.key}" value="" placeholder="Not Applicable" disabled style="background: #F8FAFC; color: #64748B;" />
+            </div>
+          `;
+          modalRule6List.appendChild(card);
+          return;
+        }
+      }
+
+      // Special handling for Dimensions of Commodity when product is exempt
+      if (field.key === 'dimensions' && isDimensionsExempt(item)) {
+        if (!val || !val.trim() || val === 'Not Applicable' || !isFound) {
+          const card = document.createElement('div');
+          card.className = 'decl-editor-card is-present';
+          card.style.background = '#F0FDF4';
+          card.style.borderColor = '#86EFAC';
+          card.setAttribute('data-key', field.key);
+          card.innerHTML = `
+            <div class="decl-editor-top" style="display: flex; justify-content: space-between; align-items: center;">
+              <div class="decl-label-box">
+                <span class="decl-title" style="font-weight: 600; font-size: 0.82rem; color: #166534;">${field.label}</span>
+                <span class="decl-sub-tag" style="font-family: var(--font-mono); font-size: 0.7rem; color: #15803D;">Rule 6(1)(m) • Conditional</span>
+              </div>
+              <div>
+                <span style="font-size: 0.72rem; font-weight: 600; background: #DCFCE7; color: #166534; padding: 3px 8px; border-radius: 999px; border: 1px solid #86EFAC;">
+                  Not Applicable
+                </span>
+              </div>
+            </div>
+            <div class="decl-input-row" style="margin-top: 0.35rem;">
+              <input type="text" class="decl-field-input" data-key="${field.key}" value="" placeholder="Not Applicable" disabled style="background: #F8FAFC; color: #64748B;" />
             </div>
           `;
           modalRule6List.appendChild(card);
@@ -1905,12 +1964,15 @@ document.addEventListener('DOMContentLoaded', async () => {
           `;
         }
         const allDone = activeBatch.items.every(i => i.status === 'reviewed' || i.status === 'recapture_requested' || (!!i.officer_action && i.officer_action !== 'recapture_resolved'));
-        if (allDone && workbenchBatchStatusPill) {
-          workbenchBatchStatusPill.textContent = 'Completed';
-          workbenchBatchStatusPill.className = 'status-pill badge-completed';
-          workbenchBatchStatusPill.style.background = '#DCFCE7';
-          workbenchBatchStatusPill.style.color = '#166534';
-          workbenchBatchStatusPill.style.borderColor = '#86EFAC';
+        if (allDone) {
+          activeBatch.status = 'completed';
+          if (workbenchBatchStatusPill) {
+            workbenchBatchStatusPill.textContent = 'Completed';
+            workbenchBatchStatusPill.className = 'status-pill badge-completed';
+            workbenchBatchStatusPill.style.background = '#DCFCE7';
+            workbenchBatchStatusPill.style.color = '#166534';
+            workbenchBatchStatusPill.style.borderColor = '#86EFAC';
+          }
         }
         updateBulkApproveButtonState(activeBatch.items);
       }
@@ -1966,10 +2028,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       }
     } else if (activeView === 'dashboard') {
       try {
-        await Promise.all([
-          loadRecentIncomingBatches(),
-          loadOfficerDashboard(),
-        ]);
+        await loadOfficerDashboard();
       } catch (e) {}
     }
   }, 15000);

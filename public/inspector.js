@@ -1216,6 +1216,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     return true;
   }
 
+  function isDimensionsExempt(item) {
+    if (!item) return true;
+    const declVals = item.declaration_values || {};
+    const dimVal = (declVals.dimensions || '').trim();
+    if (dimVal && !/^(n\/?a|not applicable|exempt)/i.test(dimVal)) {
+      return false;
+    }
+    return true;
+  }
+
   function getItemReviewStatus(item) {
     if (!item) return { needsReview: false, reasons: [], summaryReason: '' };
     if (item.analysis_status === 'analyzing') {
@@ -1650,22 +1660,76 @@ document.addEventListener('DOMContentLoaded', async () => {
       let val = staged.declaration_values[f.key] || '';
       if (val === 'Extracted from label') val = '';
 
-      if (f.key === 'country_of_origin' && isOriginDomestic && (!val || !val.trim() || !isPresent)) {
+      // Normalize any existing legacy exemption strings to 'Not Applicable'
+      if (typeof val === 'string' && /^(n\/?a\s*\(exempt|exempt)/i.test(val.trim())) {
+        val = 'Not Applicable';
+      }
+
+      // 1. Conditionally-exempt: Country of Origin when domestic
+      if (f.key === 'country_of_origin' && isOriginDomestic && (!val || !val.trim() || val === 'Not Applicable' || !isPresent)) {
         declsHtml += `
           <div class="decl-editor-card is-present" data-key="${f.key}" style="background: #F0FDF4; border-color: #86EFAC;">
             <div class="decl-editor-top">
               <div class="decl-label-box">
                 <span class="decl-title" style="color: #166534;">${f.name}</span>
-                <span class="decl-sub-tag" style="color: #15803D;">Rule 6(1)(f) • Domestic Exemption</span>
+                <span class="decl-sub-tag" style="color: #15803D;">Rule 6(1)(f) • Conditional</span>
               </div>
               <div>
                 <span style="font-size: 0.72rem; font-weight: 600; background: #DCFCE7; color: #166534; padding: 3px 8px; border-radius: 999px; border: 1px solid #86EFAC;">
-                  N/A (Exempt — domestically manufactured)
+                  Not Applicable
                 </span>
               </div>
             </div>
             <div class="decl-input-row">
-              <input type="text" class="decl-field-input" data-key="${f.key}" value="" placeholder="N/A (Exempt — domestically manufactured)" disabled style="background: #F8FAFC; color: #64748B;" />
+              <input type="text" class="decl-field-input" data-key="${f.key}" value="" placeholder="Not Applicable" disabled style="background: #F8FAFC; color: #64748B;" />
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      // 2. Conditionally-exempt: Unit Sale Price (USP) when single-unit package
+      const isSingle = isSingleUnitPackage({ ...item, ...staged, declaration_values: staged.declaration_values });
+      if (f.key === 'unit_sale_price' && isSingle && (!val || !val.trim() || val === 'Not Applicable' || !isPresent)) {
+        declsHtml += `
+          <div class="decl-editor-card is-present" data-key="${f.key}" style="background: #F0FDF4; border-color: #86EFAC;">
+            <div class="decl-editor-top">
+              <div class="decl-label-box">
+                <span class="decl-title" style="color: #166534;">${f.name}</span>
+                <span class="decl-sub-tag" style="color: #15803D;">Rule 6(1)(i) • Conditional</span>
+              </div>
+              <div>
+                <span style="font-size: 0.72rem; font-weight: 600; background: #DCFCE7; color: #166534; padding: 3px 8px; border-radius: 999px; border: 1px solid #86EFAC;">
+                  Not Applicable
+                </span>
+              </div>
+            </div>
+            <div class="decl-input-row">
+              <input type="text" class="decl-field-input" data-key="${f.key}" value="" placeholder="Not Applicable" disabled style="background: #F8FAFC; color: #64748B;" />
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      // 3. Conditionally-exempt: Dimensions of Commodity
+      const isDimExempt = isDimensionsExempt({ ...item, ...staged, declaration_values: staged.declaration_values });
+      if (f.key === 'dimensions' && isDimExempt && (!val || !val.trim() || val === 'Not Applicable' || !isPresent)) {
+        declsHtml += `
+          <div class="decl-editor-card is-present" data-key="${f.key}" style="background: #F0FDF4; border-color: #86EFAC;">
+            <div class="decl-editor-top">
+              <div class="decl-label-box">
+                <span class="decl-title" style="color: #166534;">${f.name}</span>
+                <span class="decl-sub-tag" style="color: #15803D;">Rule 6(1)(g) • Conditional</span>
+              </div>
+              <div>
+                <span style="font-size: 0.72rem; font-weight: 600; background: #DCFCE7; color: #166534; padding: 3px 8px; border-radius: 999px; border: 1px solid #86EFAC;">
+                  Not Applicable
+                </span>
+              </div>
+            </div>
+            <div class="decl-input-row">
+              <input type="text" class="decl-field-input" data-key="${f.key}" value="" placeholder="Not Applicable" disabled style="background: #F8FAFC; color: #64748B;" />
             </div>
           </div>
         `;
@@ -2875,18 +2939,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     let declsHtml = '';
+    const isDomestic = (item.product_origin || item.declaration_values?.product_origin || 'Domestic').toString().toLowerCase() === 'domestic';
+    const isSingle = isSingleUnitPackage(item);
+    const isDimExempt = isDimensionsExempt(item);
+
     RULE6_FIELDS.forEach(f => {
       const isPresent = (item.declarations_found || []).includes(f.key);
+      const isExempt = (f.key === 'country_of_origin' && isDomestic && !isPresent) ||
+                       (f.key === 'unit_sale_price' && isSingle && !isPresent) ||
+                       (f.key === 'dimensions' && isDimExempt && !isPresent);
+
+      let statusTag = isPresent
+        ? '<span class="rule6-status-tag found">✓ Present</span>'
+        : (isExempt ? '<span class="rule6-status-tag" style="background:#DCFCE7; color:#166534; border:1px solid #86EFAC;">Not Applicable</span>' : '<span class="rule6-status-tag missing">✕ Absent</span>');
+
       declsHtml += `
-        <div class="decl-editor-card ${isPresent ? 'is-present' : 'is-absent'}" style="pointer-events: none;">
+        <div class="decl-editor-card ${isPresent || isExempt ? 'is-present' : 'is-absent'}" style="pointer-events: none;">
           <div class="decl-editor-top">
             <div class="decl-label-box">
               <span class="decl-title">${f.name}</span>
               <span class="decl-sub-tag">${f.sub}</span>
             </div>
-            <span class="rule6-status-tag ${isPresent ? 'found' : 'missing'}">
-              ${isPresent ? '✓ Present' : '✕ Absent'}
-            </span>
+            ${statusTag}
           </div>
         </div>
       `;

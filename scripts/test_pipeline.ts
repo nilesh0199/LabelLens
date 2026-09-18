@@ -83,7 +83,7 @@ async function runTests() {
   assert(res7.needsReview === true, 'Compliant item with low confidence (72%) flagged independently');
 
   // Verdict Independence: Non-compliant with high confidence
-  const res8 = checkNeedsReview(0.96, missingCoo, ['country_of_origin'], '1 kg', 'Detergent', '');
+  const res8 = checkNeedsReview(0.96, missingCoo, ['country_of_origin'], '1 kg', 'Detergent', '', 'Imported');
   assert(res8.needsReview === true, 'Non-compliant item with high confidence flagged due to missing field');
 
   // ---------------------------------------------------------------

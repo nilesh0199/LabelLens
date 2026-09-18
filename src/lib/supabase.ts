@@ -376,6 +376,18 @@ export const dataStore = {
         console.error('[Supabase DB] Error submitting batch:', error.message);
         throw new Error(`Supabase DB submitBatch failed: ${error.message}`);
       }
+
+      // Synchronize item statuses from draft to submitted
+      try {
+        await supabase
+          .from('batch_items')
+          .update({ status: 'submitted' })
+          .eq('batch_id', batchId)
+          .eq('status', 'draft');
+      } catch (itemSyncErr: any) {
+        console.warn(`[Supabase DB] Warning syncing item statuses for ${batchId}:`, itemSyncErr.message);
+      }
+
       return this.getBatchById(batchId);
     }
 
@@ -383,6 +395,9 @@ export const dataStore = {
     if (batch) {
       batch.status = 'pending_review';
       batch.submitted_at = now;
+      Array.from(memoryItems.values())
+        .filter(i => i.batch_id === batchId && i.status === 'draft')
+        .forEach(i => { i.status = 'submitted'; });
       return this.getBatchById(batchId);
     }
     return null;
@@ -692,9 +707,15 @@ export const dataStore = {
           *,
           batch_items (
             item_id,
+            product_name,
             compliant,
+            confidence,
+            needs_review,
+            review_reasons,
             status,
-            officer_action
+            officer_action,
+            photos,
+            declaration_values
           )
         `)
         .neq('status', 'draft')
@@ -744,9 +765,9 @@ export const dataStore = {
     let totalOverriddenItems = 0;
     const needsAttentionItems: any[] = [];
 
+    // Zero-roundtrip in-memory computation from pre-fetched batch items
     for (const b of batches) {
-      const full = await this.getBatchById(b.batch_id);
-      const items = full?.items || [];
+      const items = (b as any).items || (b as any).batch_items || [];
       const isPending = (b.status === 'pending_review' || b.status === 'under_review');
 
       for (const item of items) {
@@ -757,6 +778,7 @@ export const dataStore = {
           if (!item.compliant || item.needs_review) {
             needsAttentionItems.push({
               ...item,
+              batch_id: b.batch_id,
               store_name: b.store_name,
               store_location: b.store_location,
               inspector_name: b.inspector_name,

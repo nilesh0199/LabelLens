@@ -1,4 +1,15 @@
 import { PDFDocument, rgb, StandardFonts, PDFPage } from 'pdf-lib';
+import { isSingleUnitPackage, detectProductOrigin } from './compliance';
+
+function isItemDimensionsExempt(item: any): boolean {
+  if (!item) return true;
+  const declVals = item.declaration_values || {};
+  const dimVal = (declVals.dimensions || '').trim();
+  if (dimVal && !/^(n\/?a|not applicable|exempt)/i.test(dimVal)) {
+    return false;
+  }
+  return true;
+}
 
 // Color Palette matching LabelLens Branding
 const NAVY = rgb(0.08, 0.09, 0.23);        // #14163A (Brand Navy)
@@ -215,11 +226,32 @@ export async function generateSingleItemPdf(
   // Render Table Rows (Right Column)
   const foundSet = new Set(item.declarations_found || []);
   const declVals = item.declaration_values || {};
+  const isDomestic = (item.product_origin || item.declaration_values?.product_origin || detectProductOrigin(declVals.manufacturer_details, item.raw_ocr_text, declVals.country_of_origin)).toString().toLowerCase() === 'domestic';
+  const isSingle = isSingleUnitPackage(declVals.net_quantity, item.product_name, item.raw_ocr_text, item.pack_type || declVals.pack_type);
+  const isDimExempt = isItemDimensionsExempt(item);
 
   for (let i = 0; i < MANDATORY_RULE6_FIELDS.length; i++) {
     const field = MANDATORY_RULE6_FIELDS[i];
     const isFound = foundSet.has(field.key);
-    let val = declVals[field.key] || (isFound ? 'Present on packaging' : 'Not detected');
+    let val = declVals[field.key] || '';
+
+    const isCoOriginExempt = field.key === 'country_of_origin' && isDomestic && (!val || !val.trim() || /^(n\/?a|exempt|not detected)/i.test(val) || !isFound);
+    const isUspExempt = field.key === 'unit_sale_price' && isSingle && (!val || !val.trim() || /^(n\/?a|exempt|not detected)/i.test(val) || !isFound);
+    const isDimFieldExempt = field.key === 'dimensions' && isDimExempt && (!val || !val.trim() || /^(n\/?a|exempt|not detected)/i.test(val) || !isFound);
+
+    const isExempt = isCoOriginExempt || isUspExempt || isDimFieldExempt;
+
+    let statusStr = isFound ? 'PRESENT' : 'MISSING';
+    let statusColor = isFound ? GREEN : RED;
+
+    if (isExempt || /^(n\/?a\s*\(exempt|exempt)/i.test(val.trim())) {
+      val = 'Not Applicable';
+      statusStr = 'NOT APPLICABLE';
+      statusColor = TEXT_MUTED;
+    } else if (!val) {
+      val = isFound ? 'Present on packaging' : 'Not detected';
+    }
+
     if (val.length > 32) val = val.substring(0, 30) + '...';
 
     const rowBg = i % 2 === 0 ? rgb(0.99, 0.99, 1) : rgb(1, 1, 1);
@@ -234,11 +266,16 @@ export async function generateSingleItemPdf(
     });
 
     page.drawText(field.label.substring(0, 24), { x: tableColX + 6, y: curTableY - 12, size: 6.8, font: fontRegular, color: TEXT_DARK });
-    page.drawText(val, { x: tableColX + 140, y: curTableY - 12, size: 6.8, font: fontRegular, color: isFound ? TEXT_DARK : TEXT_MUTED });
+    page.drawText(val, { x: tableColX + 140, y: curTableY - 12, size: 6.8, font: fontRegular, color: isFound || isExempt ? TEXT_DARK : TEXT_MUTED });
 
-    const statusStr = isFound ? 'PRESENT' : 'MISSING';
-    const statusColor = isFound ? GREEN : RED;
-    page.drawText(statusStr, { x: tableColX + 285, y: curTableY - 12, size: 6.8, font: fontBold, color: statusColor });
+    const isStatusNA = statusStr === 'NOT APPLICABLE';
+    page.drawText(statusStr, {
+      x: isStatusNA ? tableColX + 268 : tableColX + 285,
+      y: curTableY - 12,
+      size: isStatusNA ? 5.8 : 6.8,
+      font: fontBold,
+      color: statusColor
+    });
 
     curTableY -= 17;
   }
@@ -975,11 +1012,32 @@ export async function generateAggregateReportPdf(
     let curTableY = sectionTopY - 16;
     const foundSet = new Set(item.declarations_found || []);
     const declVals = item.declaration_values || {};
+    const isDomestic = (item.product_origin || item.declaration_values?.product_origin || detectProductOrigin(declVals.manufacturer_details, item.raw_ocr_text, declVals.country_of_origin)).toString().toLowerCase() === 'domestic';
+    const isSingle = isSingleUnitPackage(declVals.net_quantity, item.product_name, item.raw_ocr_text, item.pack_type || declVals.pack_type);
+    const isDimExempt = isItemDimensionsExempt(item);
 
     for (let i = 0; i < MANDATORY_RULE6_FIELDS.length; i++) {
       const field = MANDATORY_RULE6_FIELDS[i];
       const isFound = foundSet.has(field.key);
-      let val = declVals[field.key] || (isFound ? 'Present on packaging' : 'Not detected');
+      let val = declVals[field.key] || '';
+
+      const isCoOriginExempt = field.key === 'country_of_origin' && isDomestic && (!val || !val.trim() || /^(n\/?a|exempt|not detected)/i.test(val) || !isFound);
+      const isUspExempt = field.key === 'unit_sale_price' && isSingle && (!val || !val.trim() || /^(n\/?a|exempt|not detected)/i.test(val) || !isFound);
+      const isDimFieldExempt = field.key === 'dimensions' && isDimExempt && (!val || !val.trim() || /^(n\/?a|exempt|not detected)/i.test(val) || !isFound);
+
+      const isExempt = isCoOriginExempt || isUspExempt || isDimFieldExempt;
+
+      let statusStr = isFound ? 'PRESENT' : 'MISSING';
+      let statusColor = isFound ? GREEN : RED;
+
+      if (isExempt || /^(n\/?a\s*\(exempt|exempt)/i.test(val.trim())) {
+        val = 'Not Applicable';
+        statusStr = 'NOT APPLICABLE';
+        statusColor = TEXT_MUTED;
+      } else if (!val) {
+        val = isFound ? 'Present on packaging' : 'Not detected';
+      }
+
       if (val.length > 30) val = val.substring(0, 28) + '...';
 
       const rowBg = i % 2 === 0 ? rgb(0.99, 0.99, 1) : rgb(1, 1, 1);
@@ -994,11 +1052,16 @@ export async function generateAggregateReportPdf(
       });
 
       itemPage.drawText(field.label.substring(0, 23), { x: tableColX + 6, y: curTableY - 12, size: 6.8, font: fontRegular, color: TEXT_DARK });
-      itemPage.drawText(val, { x: tableColX + 140, y: curTableY - 12, size: 6.8, font: fontRegular, color: isFound ? TEXT_DARK : TEXT_MUTED });
+      itemPage.drawText(val, { x: tableColX + 140, y: curTableY - 12, size: 6.8, font: fontRegular, color: isFound || isExempt ? TEXT_DARK : TEXT_MUTED });
 
-      const statusStr = isFound ? 'PRESENT' : 'MISSING';
-      const statusColor = isFound ? GREEN : RED;
-      itemPage.drawText(statusStr, { x: tableColX + 285, y: curTableY - 12, size: 6.8, font: fontBold, color: statusColor });
+      const isStatusNA = statusStr === 'NOT APPLICABLE';
+      itemPage.drawText(statusStr, {
+        x: isStatusNA ? tableColX + 268 : tableColX + 285,
+        y: curTableY - 12,
+        size: isStatusNA ? 5.8 : 6.8,
+        font: fontBold,
+        color: statusColor
+      });
 
       curTableY -= 17;
     }
