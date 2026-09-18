@@ -4,17 +4,15 @@ This document details the production technology stack, architectural components,
 
 ---
 
-## 🧭 Technology Stack Evolution
+## 🧭 Technology Stack Overview
 
-> [!IMPORTANT]
-> **Stack Architecture Transition Notice**:
-> In the initial local prototype phase, the system utilized a local Python FastAPI backend, SQLite database (`history.db`), and CPU-based EasyOCR with OpenCV image processing.
-> To support high-volume mobile field inspections, multi-lingual Indian packaging, real-time officer adjudication, and zero-maintenance global deployment for **SIH 2026**, the official production stack has transitioned to:
-> - **Hosting**: **Vercel** (Global Edge CDN & Serverless)
-> - **Backend & Database**: **Supabase** (PostgreSQL, Supabase Auth RBAC, Storage)
-> - **OCR & Document AI**: **Google Vision API** (Cloud Document Text Detection)
->
-> Legacy FastAPI and local EasyOCR routes are retained in `backend/` as a development fallback while the cloud migration is in progress.
+To support high-volume mobile field inspections, multi-lingual Indian packaging, real-time officer adjudication, and zero-maintenance cloud deployment for **SIH 2026**, the production stack is built entirely on:
+- **Full-Stack Framework**: **Next.js 14.2 (App Router & Serverless TypeScript API)**
+- **Database & Object Storage**: **Supabase (PostgreSQL 15+ & Supabase Storage)**
+- **OCR & Document AI**: **Google Cloud Vision API (`DOCUMENT_TEXT_DETECTION`)**
+- **LLM Reasoning & Structuring**: **Google Gemini 2.0 Flash (`gemini-2.0-flash`)**
+- **Statutory Audit Dossiers**: **`pdf-lib` (Tamper-evident legal certificate generation)**
+- **Hosting & Edge Delivery**: **Vercel**
 
 ---
 
@@ -23,7 +21,7 @@ This document details the production technology stack, architectural components,
 | Component | Technology | Implementation Details |
 | :--- | :--- | :--- |
 | **Architecture** | Vanilla HTML5 / ES6+ JavaScript | Zero-framework runtime for maximum performance and instant load times on mobile field devices. |
-| **Hosting & Edge Delivery** | **Vercel** | Configured via `vercel.json` with clean URLs, SPA redirects, and API reverse-proxying. |
+| **Hosting & Edge Delivery** | **Vercel** | Configured with clean URLs, Next.js rewrites, and serverless API routing. |
 | **Styling & Design System** | Custom CSS3 + Design Tokens | Warm archival paper theme (`#FCFBF7`) with official deep navy gradients (`#14163A`/`#1D2050`). |
 | **Typography** | Google Fonts | **Fraunces** (editorial serif for titles/wordmark) + **IBM Plex Sans** (crisp UI body & forms). |
 | **Mobile PWA Support** | Web App Manifest (`manifest.json`) | Standalone app experience, home-screen installation, and mobile viewport locking (`375px–430px`). |
@@ -31,39 +29,41 @@ This document details the production technology stack, architectural components,
 
 ---
 
-## ⚡ 2. Backend & Data Layer (Supabase)
+## ⚡ 2. Backend & Data Layer (Next.js & Supabase)
 
-Supabase provides the managed backend infrastructure for user authentication, transactional ledger records, and multi-angle image storage:
+Next.js 14 App Router routes handle serverless API execution while Supabase provides managed PostgreSQL and high-resolution photo storage:
 
-| Supabase Module | Production Role | Current Status |
+| Module | Technology | Production Role |
 | :--- | :--- | :--- |
-| **Supabase Auth** | Role-Based Access Control (RBAC) handling distinct roles (`inspector`, `officer`, `admin`) via JWT claims. | **In Progress**: Local demo session engine (`frontend/auth.js`) active; Supabase JS SDK client integration pending. |
-| **PostgreSQL Database** | Relational tables for inspection batches, specimen items, statutory Rule 6 checklist results, and officer remarks. | **In Progress**: Active schema implemented in SQLite (`backend/database.py`); Supabase migration SQL prepared in [docs/SETUP.md](SETUP.md). |
-| **Supabase Storage** | S3-compatible cloud storage bucket (`specimen-photos`) storing Front, Back, and Side label captures. | **Pending**: Local uploads currently saved to `backend/uploads/`. |
-| **Row Level Security (RLS)** | Ensures field inspectors can only modify their own active batches while reviewing officers have jurisdictional read/adjudicate access. | **Pending**: RLS policies defined in schema migration script. |
+| **API Gateway** | Next.js Serverless Route Handlers (`app/api/`) | High-throughput, stateless endpoints for batch management, inspection, adjudication, and PDF reports. |
+| **Role-Based Access Control (RBAC)** | Role validation & sessions (`auth.js` / Supabase Auth) | Distinct roles (`inspector`, `officer`, `admin`) enforcing jurisdictional access control. |
+| **PostgreSQL Database** | Supabase Managed PostgreSQL | Relational schema for inspection batches, specimen items, statutory Rule 6 checklist results, and officer remarks. |
+| **Cloud Storage** | Supabase Storage (`specimen-photos`) | S3-compatible cloud storage bucket storing Front PDP, Back Info, and Side Panel captures. |
+| **Row Level Security (RLS)** | PostgreSQL RLS Policies | Guarantees field inspectors modify only their active batches while reviewing officers adjudicate within their jurisdictional scope. |
 
 ---
 
-## 🔍 3. OCR & Regulatory Compliance Engine (Google Vision API)
+## 🔍 3. OCR & AI Analysis Engine (Vision API + Gemini 2.0 Flash)
 
 | Attribute | Specification |
 | :--- | :--- |
-| **Service** | **Google Cloud Vision API** (`DOCUMENT_TEXT_DETECTION`) |
+| **OCR Service** | **Google Cloud Vision API** (`DOCUMENT_TEXT_DETECTION`) |
 | **Purpose** | Extracting micro-print text, numeric values, and statutory declarations from high-resolution package angles (Front PDP, Back Panel, Side Panels). |
-| **Invocation Source** | Invoked from the backend API gateway (`/api/inspector/inspect-item`) or Supabase Edge Function upon inspector specimen submission. |
+| **LLM & Reasoning** | **Google Gemini 2.0 Flash (`gemini-2.0-flash`)** |
+| **Purpose** | Semantic synthesis across multiple package angles, statutory field normalization, fuzzy brand/manufacturer matching, and Rule 6 compliance reasoning. |
 | **Strengths for SIH26034** | Superior accuracy on low-contrast curved packaging, bilingual Indian scripts (Hindi, regional languages + English), and small font sizes (down to 1mm statutory heights). |
-| **Local Fallback** | `backend/main.py` maintains an EasyOCR / OpenCV processing pipeline for offline local testing when Google Vision credentials are not configured. |
+| **Rules Engine** | Deterministic TypeScript engine (`src/lib/compliance.ts`) validating 10 statutory declarations, conditional exemptions (displaying `"Not Applicable"`), and Section 36 penalties. |
 
 ---
 
-## 📦 4. Additional Services & Dependencies
+## 📦 4. Additional Services & Libraries
 
 | Package / Library | Ecosystem | Role & Justification |
 | :--- | :--- | :--- |
-| **ReportLab** | Python / Backend | Generates formal, tamper-evident statutory PDF inspection certificates (`backend/pdf_generator.py`). |
-| **Pillow (PIL)** | Python / Backend | Performs client/server image resizing, rotation correction, and thumbnail generation. |
-| **OpenCV (`cv2`)** | Python / Backend | Image preprocessing (CLAHE contrast normalization, grayscale, blur estimation via Laplacian variance). |
-| **Uvicorn & Starlette** | Python / Backend | High-performance ASGI runtime powering local development and testing routes. |
+| **`pdf-lib`** | Node.js / TypeScript | Generates formal, tamper-evident statutory PDF inspection certificates and Form II notices on the fly without heavy headless browser dependencies. |
+| **`@supabase/supabase-js`** | TypeScript | Official client SDK for transactional database CRUD, realtime sync, and object storage uploads. |
+| **`next` (v14.2+)** | Node.js / React | Full-stack production runtime providing App Router, SSR/SSG, edge middleware, and optimized asset delivery. |
+| **`pg`** | Node.js | Direct PostgreSQL connection pooler for high-throughput batch and ledger verification scripts. |
 
 ---
 
@@ -71,4 +71,5 @@ Supabase provides the managed backend infrastructure for user authentication, tr
 
 - System Architecture & Data Flow: [docs/ARCHITECTURE.md](ARCHITECTURE.md)
 - Local Development & Deployment Setup: [docs/SETUP.md](SETUP.md)
-- Development Roadmap & Pending Tasks: [docs/TODO.md](TODO.md)
+- Legal & Regulatory Compliance Guide: [docs/LEGAL_COMPLIANCE.md](LEGAL_COMPLIANCE.md)
+- Quick Start & Demo Accounts: [README.md](../README.md#-demo-credentials--test-roles)

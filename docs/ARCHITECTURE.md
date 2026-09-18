@@ -11,42 +11,47 @@ The end-to-end regulatory lifecycle progresses through four distinct phases:
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Inspector as Field Inspector (Mobile)
+    actor Inspector as Field Inspector (Mobile LMO)
     participant UI as Guided Camera UI
-    participant OCR as Google Vision API / OCR
-    participant DB as Supabase Ledger
+    participant AI as AI Pipeline (Vision API + Gemini 2.0)
+    participant Rules as Rule 6 Compliance Engine
+    participant DB as Supabase (PostgreSQL & Storage)
     actor Officer as Senior Reviewing Officer
+    participant PDF as pdf-lib Engine
     
-    Note over Inspector,UI: Phase 1: On-Site Retail Verification
-    Inspector->>UI: Create Batch Session (Store Name, Location)
-    UI->>DB: INSERT INTO batches (status: 'active')
+    Note over Inspector,UI: Phase 1: On-Site Retail Batch Initiation
+    Inspector->>UI: Create Batch Session (Store Name, Location/GPS)
+    UI->>DB: INSERT INTO batches (status: 'draft')
     
-    Note over Inspector,UI: Phase 2: Angle-Guided Specimen Capture
+    Note over Inspector,UI: Phase 2: Angle-Guided Specimen Capture & AI Analysis
     Inspector->>UI: Capture Front PDP (Mandatory)
     Inspector->>UI: Capture Back Info Panel (Recommended)
     Inspector->>UI: Capture Side Detail Panel (Optional)
-    UI->>OCR: Transmit Multi-Angle Photos
-    OCR-->>UI: Extracted Text & Rule 6 Declarations
-    Inspector->>DB: Add Specimen to Batch Manifest
-    Inspector->>DB: Submit Batch Dossier (status: 'pending_review')
+    UI->>AI: Transmit Multi-Angle Photos (/api/inspector/inspect-item)
+    AI->>Rules: Raw Declarations & Extracted Fields
+    Rules-->>UI: Evaluated Rule 6 Checklist & Compliance Score
+    Inspector->>UI: Review & Verify in Declaration Editor
+    UI->>DB: INSERT INTO batch_items & Store Photos in Supabase Storage
+    Inspector->>DB: Submit Batch Dossier (/api/batches/[id]/submit -> status: 'pending_review')
 
     Note over Officer,DB: Phase 3: Judicial Adjudication
-    Officer->>DB: Fetch Jurisdictional Review Queue
-    DB-->>Officer: Dossier with Photos & Automated Checklist
+    Officer->>DB: Fetch Jurisdictional Review Queue (/api/officer/batches)
+    DB-->>Officer: Dossier with Multi-Angle Photos & Rule 6 Findings
     alt Approve As-Is
         Officer->>DB: Endorse Findings (status: 'approved')
     else Override Verdict
-        Officer->>DB: Flip Verdict + Mandatory Justification (status: 'overridden')
+        Officer->>DB: Flip Verdict + Mandatory Judicial Reason (status: 'overridden')
     else Send for Recapture
         Officer->>DB: Reject Specimen + Specific Instructions (status: 'recapture_requested')
-        DB-->>Inspector: Recapture Warning Banner on Mobile
+        DB-->>UI: Recapture Alert Banner on Mobile Inspector Portal
     else Correct & Remark
         Officer->>DB: Edit Extracted Values + Finalize (status: 'corrected')
     end
 
-    Note over Officer,DB: Phase 4: Tamper-Evident Record
-    Officer->>DB: Commit to Permanent Regulatory Ledger
-    DB-->>Officer: Generate Legal Certificate / PDF
+    Note over Officer,PDF: Phase 4: Tamper-Evident Audit Dossier
+    Officer->>DB: Commit Batch to Permanent Ledger (status: 'completed')
+    Officer->>PDF: Generate Statutory Audit Dossier (Form II Notice / Certificate)
+    PDF-->>Officer: Streamed Downloadable PDF Certificate
 ```
 
 ---
@@ -66,7 +71,7 @@ erDiagram
         string jurisdiction
         string store_name
         text store_location
-        string status "active | pending_review | under_review | completed"
+        string status "draft | pending_review | under_review | completed"
         timestamp created_at
         timestamp submitted_at
     }
@@ -79,14 +84,14 @@ erDiagram
         jsonb photos "array of {photo_id, url, angle, is_blurry, blur_score, timestamp}"
         boolean compliant
         float confidence
-        jsonb declarations_found "array of string rule keys"
-        jsonb declarations_missing "array of string rule keys"
+        jsonb declarations_found "array of rule keys"
+        jsonb declarations_missing "array of rule keys"
         jsonb declaration_values "object mapping rule keys to extracted values"
         text raw_ocr_text
         text cleaned_summary
-        string status "pending | approved | overridden | recapture_requested"
+        string status "draft | pending | approved | overridden | recapture_requested"
         boolean needs_review
-        jsonb review_reasons "array of string flags"
+        jsonb review_reasons "array of reason flags"
         string officer_action
         text officer_remarks
         timestamp created_at
@@ -101,26 +106,27 @@ LabelLens strictly separates field enforcement responsibilities from judicial ov
 
 ### Role Matrix
 
-| Capability / Route | Field Inspector | Senior Reviewing Officer | System Administrator |
+| Capability / Route | Field Inspector (`inspector`) | Senior Reviewing Officer (`officer`) | System Administrator (`admin`) |
 | :--- | :---: | :---: | :---: |
-| **Landing & Role Select (`/login`)** | Access | Access | Access |
-| **Mobile Inspector Portal (`/inspector`)** | Full Access | Read-Only View | Admin View |
+| **Landing & Role Select (`/login.html`)** | Access | Access | Access |
+| **Mobile Inspector Portal (`/inspector.html`)** | Full Access | Read-Only View | Admin View |
 | **Camera Capture Engine (`camera.js`)** | Full Access | Disabled | Disabled |
 | **Batch Initiation & Manifest Edit** | Full Access | Restricted | Admin Override |
-| **Reviewing Officer Workbench (`/officer`)** | Access Denied | Full Access | Full Access |
+| **Reviewing Officer Workbench (`/officer.html`)** | Access Denied | Full Access | Full Access |
 | **Verdict Override & Adjudication** | Restricted | Full Access | Audit Only |
 | **Recapture Request Issuance** | Restricted | Full Access | Restricted |
+| **Statutory PDF Generation (`pdf-lib`)** | View Only | Generate & Export | Generate & Audit |
 | **Jurisdictional User Management** | Access Denied | Access Denied | Full Access |
 
 ### Enforcement Mechanisms
 1. **Client-Side Route Guard (`frontend/auth.js`)**:
-   - Inspects `LabelLensAuth.getAuthSession()`.
-   - Bounces unauthenticated visitors to `/login`.
-   - Prevents an authenticated Field Inspector from navigating to `/officer`, displaying a departmental access restriction notice.
-2. **Supabase Row Level Security (RLS)**:
-   - Inspectors can only `INSERT` and `UPDATE` batches where `inspector_id = auth.uid()`.
-   - Reviewing officers possess `SELECT` and `UPDATE` permissions on batches matching their assigned `jurisdiction`.
-   - Immutable audit log triggers prevent post-adjudication alterations of finalized records.
+   - Inspects active session credentials and assigned roles.
+   - Restricts unauthenticated visitors to `/login.html`.
+   - Prevents an authenticated Field Inspector from accessing `/officer.html`, redirecting with a jurisdictional notice.
+2. **Serverless API Route Validation (`app/api/`)**:
+   - API endpoints enforce role checks prior to executing transactional writes or status transitions.
+3. **Supabase Storage Isolation**:
+   - Multi-angle photos are stored under structured paths (`uploads/`) within the `specimen-photos` bucket, linked immutably to item IDs.
 
 ---
 
@@ -128,5 +134,5 @@ LabelLens strictly separates field enforcement responsibilities from judicial ov
 
 - Technology Choices: [docs/TECH_STACK.md](TECH_STACK.md)
 - Local Setup & Migration Instructions: [docs/SETUP.md](SETUP.md)
-- Outstanding Tasks & Roadmap: [docs/TODO.md](TODO.md)
-- Local Dev Credentials: [CREDENTIALS.md](../CREDENTIALS.md)
+- Legal & Regulatory Compliance Guide: [docs/LEGAL_COMPLIANCE.md](LEGAL_COMPLIANCE.md)
+- Quick Start & Demo Accounts: [README.md#demo-credentials--test-roles](../README.md#-demo-credentials--test-roles)

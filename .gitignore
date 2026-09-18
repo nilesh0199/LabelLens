@@ -32,3 +32,8 @@ backend/uploads/
 .DS_Store
 Thumbs.db
 *.pdf
+
+# Internal planning and task lists
+TODO.md
+docs/TODO.md
+
