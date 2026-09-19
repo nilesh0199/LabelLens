@@ -1,5 +1,28 @@
-const SUPABASE_URL = 'https://zrgrucpghxdtailgcpam.supabase.co';
-const SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpyZ3J1Y3BnaHhkdGFpbGdjcGFtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc4OTI4NDgyNywiZXhwIjoyMTA0ODYwODI3fQ.AL11-YnYav39VJaOtFEzKG06SGzgTRc7Ldh7DbMxFE0';
+import fs from 'fs';
+
+// Load .env.local if present
+if (fs.existsSync('.env.local')) {
+  const envContent = fs.readFileSync('.env.local', 'utf8');
+  envContent.split('\n').forEach(line => {
+    const trimmed = line.trim();
+    if (trimmed && !trimmed.startsWith('#')) {
+      const idx = trimmed.indexOf('=');
+      if (idx !== -1) {
+        const k = trimmed.slice(0, idx).trim();
+        const v = trimmed.slice(idx + 1).trim();
+        process.env[k] = v;
+      }
+    }
+  });
+}
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!SUPABASE_URL || !SERVICE_KEY) {
+  console.error('Error: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in environment or .env.local');
+  process.exit(1);
+}
 
 async function verifyTables() {
   console.log('--- Verifying Supabase Tables ---');
