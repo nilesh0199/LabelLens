@@ -3,6 +3,8 @@ import { dataStore } from '@/lib/supabase';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 /**
  * INSPECTOR DASHBOARD API CONTRACT:
@@ -63,10 +65,23 @@ export async function GET(req: NextRequest) {
       completed_count: completedCount,
       total_inspections: submitted.length,
       recapture_items: recaptureItems,
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
     });
   } catch (err: any) {
     console.error('[inspector/dashboard] Error:', err);
-    return NextResponse.json({ error: err.message || 'Failed to fetch dashboard' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Failed to fetch dashboard' }, {
+      status: 500,
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      }
+    });
   }
 }
 

@@ -976,16 +976,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         method: 'DELETE'
       });
 
-      if (!res.ok) {
+      if (!res.ok && res.status !== 404) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || `Failed to delete batch (${res.status})`);
       }
 
       // If active batch was deleted, reset active session
-      if (activeBatch && activeBatch.batch_id === batchId) {
+      if ((activeBatch && activeBatch.batch_id === batchId) || sessionStorage.getItem('labelLens_active_batch_id') === batchId) {
         sessionStorage.removeItem('labelLens_active_batch_id');
         activeBatch = null;
-        await checkActiveBatchSession();
+        await loadInspectorDashboard();
       }
 
       // Re-render switch batch modal if open
@@ -3106,7 +3106,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   // =========================================================================
   async function loadInspectorDashboard() {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/inspector/dashboard?inspector_id=${encodeURIComponent(user.badge_number || user.username)}`);
+      const res = await fetch(`${API_BASE_URL}/api/inspector/dashboard?inspector_id=${encodeURIComponent(user.badge_number || user.username)}&_t=${Date.now()}`, { cache: 'no-store' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 

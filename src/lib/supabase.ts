@@ -23,6 +23,9 @@ export function getSupabaseClient(): SupabaseClient | null {
   try {
     _supabaseClient = createClient(url, key, {
       auth: { persistSession: false },
+      global: {
+        fetch: (url, init) => fetch(url, { ...init, cache: 'no-store' }),
+      },
     });
     return _supabaseClient;
   } catch (err) {
@@ -526,7 +529,7 @@ export const dataStore = {
         .single();
 
       if (bErr || !batch) {
-        throw new Error(`Batch '${batchId}' not found.`);
+        return { success: true, message: "Batch already deleted." };
       }
 
       if (batch.status !== 'draft') {
@@ -597,7 +600,7 @@ export const dataStore = {
     // In-memory fallback
     const memBatch = memoryBatches.get(batchId);
     if (!memBatch) {
-      throw new Error(`Batch '${batchId}' not found.`);
+      return { success: true, message: "Batch already deleted." };
     }
     if (memBatch.status !== 'draft') {
       throw new Error(`Cannot delete batch '${batchId}': only draft (unsubmitted) batches can be deleted.`);

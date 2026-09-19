@@ -3,6 +3,8 @@ import { dataStore } from '@/lib/supabase';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 export async function GET(
   _req: NextRequest,
@@ -33,8 +35,10 @@ export async function DELETE(
     return NextResponse.json(result);
   } catch (err: any) {
     console.error(`[batches/${params.batch_id} DELETE] Error:`, err);
-    const status = err.message?.includes('not found') ? 404 : 400;
-    return NextResponse.json({ error: err.message || 'Failed to delete batch' }, { status });
+    if (err.message?.includes('not found')) {
+      return NextResponse.json({ success: true, message: "Batch already deleted." }, { status: 200 });
+    }
+    return NextResponse.json({ error: err.message || 'Failed to delete batch' }, { status: 400 });
   }
 }
 

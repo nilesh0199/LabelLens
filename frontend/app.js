@@ -931,7 +931,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // }
   async function loadInspectorDashboard() {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/inspector/dashboard?inspector_id=${encodeURIComponent(inspectorProfile.id)}`);
+      const res = await fetch(`${API_BASE_URL}/api/inspector/dashboard?inspector_id=${encodeURIComponent(inspectorProfile.id)}&_t=${Date.now()}`, { cache: 'no-store' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
