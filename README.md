@@ -51,7 +51,7 @@ Developed for the **Smart India Hackathon 2026 (Problem Statement SIH26034)** fo
 | **Frontend Runtime** | **HTML5, Vanilla ES6+, CSS3** | High-performance PWA with zero framework overhead, mobile viewport locking (`375px–430px`), and archival paper styling (`#FCFBF7`). |
 | **Database & Storage** | **Supabase (PostgreSQL 15+ & Storage)** | Relational schema for inspection sessions, specimens, and adjudications; S3-compatible cloud bucket (`specimen-photos`) for evidence photos. |
 | **Computer Vision / OCR**| **Google Cloud Vision API** | `DOCUMENT_TEXT_DETECTION` optimized for micro-print statutory declarations down to 1.0mm font sizes. |
-| **Generative AI / LLM** | **Google Gemini 2.0 Flash** | Synthesizes multi-angle OCR transcripts, resolves bilingual declarations (Hindi/English), and structures field boundaries. |
+| **Generative AI / LLM** | **Google Gemini 3.7 Flash** | Synthesizes multi-angle OCR transcripts, resolves bilingual declarations (Hindi/English), and structures field boundaries. |
 | **Rules Engine** | **TypeScript Engine (`src/lib/compliance.ts`)** | Programmatic implementation of Legal Metrology (Packaged Commodities) Rules, 2011 and Section 36 penalty schedules. |
 | **Dossier Generation** | **`pdf-lib` (Pure TypeScript/JavaScript)** | Generates tamper-evident PDF inspection certificates and Form II notices on the fly without heavy browser dependencies. |
 | **Hosting & CDN** | **Vercel** | Edge network with clean URLs and native Next.js serverless execution. |
