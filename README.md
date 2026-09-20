@@ -7,7 +7,7 @@
 [![Framework](https://img.shields.io/badge/Framework-Next.js_14-000000.svg?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org/)
 [![Database](https://img.shields.io/badge/Database-Supabase_PostgreSQL-3ECF8E.svg?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
 [![OCR Engine](https://img.shields.io/badge/Vision_AI-Google_Cloud_Vision-4285F4.svg?style=for-the-badge&logo=googlecloud&logoColor=white)](https://cloud.google.com/vision)
-[![LLM Engine](https://img.shields.io/badge/Reasoning-Gemini_2.0_Flash-8E75C2.svg?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
+[![LLM Engine](https://img.shields.io/badge/Reasoning-Gemini_3.7_Flash-8E75C2.svg?style=for-the-badge&logo=google&logoColor=white)](https://ai.google.dev/)
 [![Dossiers](https://img.shields.io/badge/Statutory_Audit-PDF_Lib-E02424.svg?style=for-the-badge&logo=adobeacrobatreader&logoColor=white)](https://pdf-lib.js.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
@@ -34,7 +34,7 @@ Developed for the **Smart India Hackathon 2026 (Problem Statement SIH26034)** fo
 ## ⚡ Core Capabilities & Innovations
 
 - **📱 Guided Multi-Angle Mobile Scanner**: Sequential photographic workflow (Front Principal Display Panel, Back Info Panel, and Side Panels) with real-time blur detection, targeting reticles, and fallback crop utilities.
-- **👁️ Dual Vision-LLM Intelligence**: Pairs **Google Cloud Vision API** (`DOCUMENT_TEXT_DETECTION`) for micro-print and curved packaging typography with **Google Gemini 2.0 Flash (`gemini-2.0-flash`)** for semantic synthesis across package angles and fuzzy brand resolution.
+- **👁️ Dual Vision-LLM Intelligence**: Pairs **Google Cloud Vision API** (`DOCUMENT_TEXT_DETECTION`) for micro-print and curved packaging typography with **Google Gemini 3.7 Flash (`gemini-3.7-flash`)** for semantic synthesis across package angles and fuzzy brand resolution.
 - **⚖️ Deterministic Statutory Compliance Engine**: Programmatic verification of all 10 mandatory declarations under Rule 6 of the PC Rules, 2011, preventing LLM hallucinations with strict deterministic rules.
 - **🏷️ Standardized Exemption Handling**: Plain text **`"Not Applicable"`** rendering for conditionally exempt declarations (Country of Origin for domestic goods, Unit Sale Price for single-unit items, and Dimensions for weight/volume goods) across Inspector, Officer, and PDF reports.
 - **🏛️ Senior Officer Judicial Command Center**: Complete review queue management, multi-angle visual inspection, 4 statutory determination actions (*Approve As-Is*, *Override Verdict*, *Send Back for Recapture*, *Correct & Remark*), and Section 36 penalty compounding calculations.
