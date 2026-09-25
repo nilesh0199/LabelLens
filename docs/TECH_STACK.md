@@ -10,7 +10,7 @@ To support high-volume mobile field inspections, multi-lingual Indian packaging,
 - **Full-Stack Framework**: **Next.js 14.2 (App Router & Serverless TypeScript API)**
 - **Database & Object Storage**: **Supabase (PostgreSQL 15+ & Supabase Storage)**
 - **OCR & Document AI**: **Google Cloud Vision API (`DOCUMENT_TEXT_DETECTION`)**
-- **LLM Reasoning & Structuring**: **Google Gemini 2.0 Flash (`gemini-2.0-flash`)**
+- **LLM Reasoning & Structuring**: **Google Gemini 3.7 Flash (`gemini-3.7-flash`)**
 - **Statutory Audit Dossiers**: **`pdf-lib` (Tamper-evident legal certificate generation)**
 - **Hosting & Edge Delivery**: **Vercel**
 
@@ -49,7 +49,7 @@ Next.js 14 App Router routes handle serverless API execution while Supabase prov
 | :--- | :--- |
 | **OCR Service** | **Google Cloud Vision API** (`DOCUMENT_TEXT_DETECTION`) |
 | **Purpose** | Extracting micro-print text, numeric values, and statutory declarations from high-resolution package angles (Front PDP, Back Panel, Side Panels). |
-| **LLM & Reasoning** | **Google Gemini 2.0 Flash (`gemini-2.0-flash`)** |
+| **LLM & Reasoning** | **Google Gemini 3.7 Flash (`gemini-3.7-flash`)** |
 | **Purpose** | Semantic synthesis across multiple package angles, statutory field normalization, fuzzy brand/manufacturer matching, and Rule 6 compliance reasoning. |
 | **Strengths for SIH26034** | Superior accuracy on low-contrast curved packaging, bilingual Indian scripts (Hindi, regional languages + English), and small font sizes (down to 1mm statutory heights). |
 | **Rules Engine** | Deterministic TypeScript engine (`src/lib/compliance.ts`) validating 10 statutory declarations, conditional exemptions (displaying `"Not Applicable"`), and Section 36 penalties. |
